@@ -11,7 +11,7 @@
     "product_vendor": "Bit9",
     "product_name": "Carbon Black",
     "product_version_regex": "[5-7]\\.[0-9]\\.*",
-    "min_phantom_version": "5.0.0",
+    "min_phantom_version": "4.10.0.40961",
     "python_version": "3",
     "fips_compliant": true,
     "latest_tested_versions": [
