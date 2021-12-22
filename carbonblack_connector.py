@@ -185,7 +185,7 @@ class CarbonblackConnector(BaseConnector):
             self.debug_print("Handled exception: {}".format(error_msg))
             return "Unparsable Reply. Please see the log files for the response text."
 
-    def _make_rest_call(self, endpoint, action_result, method="get", params={}, headers={}, files=None, data=None,
+    def _make_rest_call(self, endpoint, action_result, method="get", params={}, headers=None, files=None, data=None,
             parse_response_json=True, additional_succ_codes={}):
         """ treat_status_code is a way in which the caller tells the function, 'if you get a status code present in this dictionary,
         then treat this as a success and just return be this value'
@@ -195,6 +195,9 @@ class CarbonblackConnector(BaseConnector):
 
         url = "{0}{1}".format(self._rest_uri, endpoint)
         self.save_progress(url)
+
+        if not headers:
+            headers = {}
         headers.update(self._headers)
 
         if files is not None:
