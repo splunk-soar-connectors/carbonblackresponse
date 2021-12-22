@@ -185,7 +185,7 @@ class CarbonblackConnector(BaseConnector):
             self.debug_print("Handled exception: {}".format(error_msg))
             return "Unparsable Reply. Please see the log files for the response text."
 
-    def _make_rest_call(self, endpoint, action_result, method="get", params={}, headers=None, files=None, data=None,
+    def _make_rest_call(self, endpoint, action_result, method="get", params={}, headers={}, files=None, data=None,
             parse_response_json=True, additional_succ_codes={}):
         """ treat_status_code is a way in which the caller tells the function, 'if you get a status code present in this dictionary,
         then treat this as a success and just return be this value'
@@ -195,9 +195,6 @@ class CarbonblackConnector(BaseConnector):
 
         url = "{0}{1}".format(self._rest_uri, endpoint)
         self.save_progress(url)
-
-        if not headers:
-            headers = {}
         headers.update(self._headers)
 
         if files is not None:
@@ -1170,10 +1167,8 @@ class CarbonblackConnector(BaseConnector):
 
             # Download file from server
             url = '/v1/cblr/session/{session_id}/file/{file_id}/content'.format(session_id=session_id, file_id=file_id)
-            verify = False
 
-            response = requests.get("{}{}".format(self._rest_uri, url), headers={'X-Auth-Token': self._api_token}, stream=True,
-                verify=verify, timeout=CARBONBLACK_DEFAULT_TIMEOUT)
+            response = requests.get("{}{}".format(self._rest_uri, url), headers={'X-Auth-Token': self._api_token}, stream=True, verify=False)
 
             guid = uuid.uuid4()
 
@@ -2205,14 +2200,12 @@ if __name__ == '__main__':
     argparser.add_argument('input_test_json', help='Input Test JSON file')
     argparser.add_argument('-u', '--username', help='username', required=False)
     argparser.add_argument('-p', '--password', help='password', required=False)
-    argparser.add_argument('-v', '--verify', action='store_true', help='verify', required=False, default=False)
 
     args = argparser.parse_args()
     session_id = None
 
     username = args.username
     password = args.password
-    verify = args.verify
 
     if username is not None and password is None:
 
@@ -2223,7 +2216,7 @@ if __name__ == '__main__':
     if username and password:
         try:
             print("Accessing the Login page")
-            r = requests.get(BaseConnector._get_phantom_base_url() + "login", verify=verify, timeout=CARBONBLACK_DEFAULT_TIMEOUT)
+            r = requests.get(BaseConnector._get_phantom_base_url() + "login", verify=False)
             csrftoken = r.cookies['csrftoken']
 
             data = dict()
@@ -2236,12 +2229,11 @@ if __name__ == '__main__':
             headers['Referer'] = BaseConnector._get_phantom_base_url() + 'login'
 
             print("Logging into Platform to get the session id")
-            r2 = requests.post(BaseConnector._get_phantom_base_url() + "login", verify=False, data=data,
-                headers=headers, timeout=CARBONBLACK_DEFAULT_TIMEOUT)
+            r2 = requests.post(BaseConnector._get_phantom_base_url() + "login", verify=False, data=data, headers=headers)
             session_id = r2.cookies['sessionid']
         except Exception as e:
             print("Unable to get session id from the platfrom. Error: " + str(e))
-            sys.exit(1)
+            exit(1)
 
     with open(args.input_test_json) as f:
         in_json = f.read()
@@ -2258,4 +2250,4 @@ if __name__ == '__main__':
         ret_val = connector._handle_action(json.dumps(in_json), None)
         print(json.dumps(json.loads(ret_val), indent=4))
 
-    sys.exit(0)
+    exit(0)

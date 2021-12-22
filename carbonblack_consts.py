@@ -102,5 +102,3 @@ CARBONBLACK_UNICODE_DAMMIT_TYPE_ERR_MSG = "Error occurred while connecting to th
 CARBONBLACK_UNICODE_DAMMIT_TYPE_ERR_MSG += " Please check the asset configuration and|or the action parameters."
 CARBONBLACK_ERR_UPDATE_ALERTS_PARAM_IDS = "Either 'query' or 'alert_ids' parameters are required for this action."
 CARBONBLACK_GROUP_ID_MSG = "Group ID unavailable"
-
-CARBONBLACK_DEFAULT_TIMEOUT = 30
