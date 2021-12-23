@@ -86,7 +86,8 @@ VALID_ALERT_STATUS = [CARBONBLACK_ALERT_STATUS_RESOLVED,
 CARBONBLACK_SLEEP_SECS = 5
 CARBONBLACK_COMMAND_FAILED = "Command {command} failed with code: {code}, desc: {desc}"
 CARBONBLACK_ERR_POLL_TIMEOUT = 'Could not get a connection to a live active session on the endpoint after {max_tries} polls.'
-CARBONBLACK_ERR_MULTI_ENDPOINTS = "{num_endpoints} endpoints matched (see results for a list). Please specify an IP/Host Name that uniquely identifies an online endpoint."
+CARBONBLACK_ERR_MULTI_ENDPOINTS = "{num_endpoints} endpoints matched (see results for a list). " \
+    "Please specify an IP/Host Name that uniquely identifies an online endpoint."
 CARBONBLACK_ERR_FILE_EXISTS = "File id for sensor already exists. "
 CARBONBLACK_ERR_INVALID_PATH = "Windows cannot find specified path"
 CARBONBLACK_ERR_INVALID_DEST_FILE = "Please check if the destination filename already exists at the specified path"

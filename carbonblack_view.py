@@ -14,7 +14,6 @@
 # and limitations under the License.
 import carbonblack_consts as consts
 
-
 # pylint: disable=E1601
 
 
@@ -27,9 +26,11 @@ def fill_table(query_type, table, data, result):
     if query_type == consts.CARBONBLACK_QUERY_TYPE_BINARY:
         table['headers'] = ["MD5", "Endpoints", "Signed", "Company Name", "Product Name", "Is Executable", "File Length", "Filenames"]
     elif query_type == consts.CARBONBLACK_QUERY_TYPE_ALERT:
-        table['headers'] = ["Username", "Alert Type", "Watchlist ID", "Feed Name", "Created Time", "IOC Type", "Watchlist Name", "Alert Severity", "Status", "Unique ID"]
+        table['headers'] = ["Username", "Alert Type", "Watchlist ID", "Feed Name", "Created Time", "IOC Type", "Watchlist Name",
+            "Alert Severity", "Status", "Unique ID"]
     else:
-        table['headers'] = ["Process Name", "Process Path", "MD5", "User Name", "Host Name", "Start", "PID", "Parent PID", "Host Type", "OS", "Unique ID", "Cmdline"]
+        table['headers'] = ["Process Name", "Process Path", "MD5", "User Name", "Host Name", "Start", "PID", "Parent PID", "Host Type",
+            "OS", "Unique ID", "Cmdline"]
     # every action result will have a single data
     data_rows = data['results']
 

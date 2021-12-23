@@ -14,34 +14,31 @@
 # and limitations under the License.
 #
 #
-# Phantom imports
-import phantom.app as phantom
-from phantom.base_connector import BaseConnector
-from phantom.action_result import ActionResult
-from phantom.vault import Vault
-import phantom.rules as ph_rules
-
-# THIS Connector imports
-from carbonblack_consts import *
-
-# Other imports used by this connector
-import os
-import time
-import sys
-import re
-import six.moves.urllib.parse
-from parse import parse
+import ctypes
+import datetime
 import json
-import zipfile
-import uuid
-import requests
+import os
+import re
 import shutil
-import magic
 import socket
 import struct
-import ctypes
+import sys
+import time
+import uuid
+import zipfile
+
+import magic
+import phantom.app as phantom
+import phantom.rules as ph_rules
+import requests
+import six.moves.urllib.parse
 from bs4 import BeautifulSoup, UnicodeDammit
-import datetime
+from parse import parse
+from phantom.action_result import ActionResult
+from phantom.base_connector import BaseConnector
+from phantom.vault import Vault
+
+from carbonblack_consts import *
 
 
 class CarbonblackConnector(BaseConnector):
@@ -170,9 +167,11 @@ class CarbonblackConnector(BaseConnector):
                 return action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERR_INVALID_INTEGER_VALUE.format(msg="", param=key)), None
 
             if parameter < 0:
-                return action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERR_INVALID_INTEGER_VALUE.format(msg="non-negative", param=key)), None
+                return action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERR_INVALID_INTEGER_VALUE.format(
+                    msg="non-negative", param=key)), None
             if not allow_zero and parameter == 0:
-                return action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERR_INVALID_INTEGER_VALUE.format(msg="non-zero positive", param=key)), None
+                return action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERR_INVALID_INTEGER_VALUE.format(
+                    msg="non-zero positive", param=key)), None
 
         return phantom.APP_SUCCESS, parameter
 
@@ -186,14 +185,19 @@ class CarbonblackConnector(BaseConnector):
             self.debug_print("Handled exception: {}".format(error_msg))
             return "Unparsable Reply. Please see the log files for the response text."
 
-    def _make_rest_call(self, endpoint, action_result, method="get", params={}, headers={}, files=None, data=None, parse_response_json=True, additional_succ_codes={}):
+    def _make_rest_call(self, endpoint, action_result, method="get", params={}, headers=None, files=None, data=None,
+            parse_response_json=True, additional_succ_codes={}):
         """ treat_status_code is a way in which the caller tells the function, 'if you get a status code present in this dictionary,
         then treat this as a success and just return be this value'
-        This was added to take care os changes Carbon Black made to their code base, with minimal amount of changes to the app _and_ to keep pylint happy.
+        This was added to take care os changes Carbon Black made to their code base,
+        with minimal amount of changes to the app _and_ to keep pylint happy.
         """
 
         url = "{0}{1}".format(self._rest_uri, endpoint)
         self.save_progress(url)
+
+        if not headers:
+            headers = {}
         headers.update(self._headers)
 
         if files is not None:
@@ -224,8 +228,8 @@ class CarbonblackConnector(BaseConnector):
 
         # Look for errors
         if not r.ok:  # pylint: disable=E1101
-            # return (action_result.set_status(phantom.APP_ERROR, "REST Api Call returned error, status_code: {0}, data: {1}".format(r.status_code,
-            #     self._normalize_reply(r.text))), r.text)
+            # return (action_result.set_status(phantom.APP_ERROR, "REST Api Call returned error, status_code: {0}, data: {1}".format(
+            # r.status_code, self._normalize_reply(r.text))), r.text)
 
             return (action_result.set_status(phantom.APP_ERROR, "REST Api Call returned error, status_code: {0}".format(r.status_code)), None)
 
@@ -237,8 +241,8 @@ class CarbonblackConnector(BaseConnector):
             try:
                 resp_json = r.json()
             except:
-                return (action_result.set_status(phantom.APP_ERROR, "Unable to parse response as a JSON status_code: {0}, data: {1}".format(r.status_code,
-                    self._normalize_reply(r.text))), None)
+                return (action_result.set_status(phantom.APP_ERROR, "Unable to parse response as a JSON status_code: {0}, data: {1}".format(
+                    r.status_code, self._normalize_reply(r.text))), None)
         else:
             resp_json = r
 
@@ -466,7 +470,8 @@ class CarbonblackConnector(BaseConnector):
             session_id = resp.get('id')
 
             if not session_id:
-                return (action_result.set_status(phantom.APP_ERROR, 'Did not get a session id in the response from a new session creation'), None)
+                return (action_result.set_status(phantom.APP_ERROR, 'Did not get a session id in the response from a new session creation'),
+                    None)
 
         # Now we either have a newly created session id, an existing pending session id, or an existing active session id
         status = 'unknown'
@@ -632,8 +637,8 @@ class CarbonblackConnector(BaseConnector):
             return action_result.set_status(phantom.APP_ERROR, self.get_status_message())
 
         if not ip_hostname and sensor_id is None:
-            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(phantom.APP_JSON_IP_HOSTNAME,
-                CARBONBLACK_JSON_SENSOR_ID))
+            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(
+                phantom.APP_JSON_IP_HOSTNAME, CARBONBLACK_JSON_SENSOR_ID))
 
         if sensor_id is not None:
 
@@ -683,8 +688,8 @@ class CarbonblackConnector(BaseConnector):
 
         if not ip_hostname and sensor_id is None:
             self.add_action_result(action_result)
-            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(phantom.APP_JSON_IP_HOSTNAME,
-                CARBONBLACK_JSON_SENSOR_ID))
+            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(
+                phantom.APP_JSON_IP_HOSTNAME, CARBONBLACK_JSON_SENSOR_ID))
 
         if sensor_id is not None:
 
@@ -1104,7 +1109,8 @@ class CarbonblackConnector(BaseConnector):
             self.save_progress("Querying Carbon Black Response for hash")
             url = '/v1/binary/{0}'.format(sample_hash)
 
-            ret_val, response = self._make_rest_call(url, action_result, parse_response_json=False, additional_succ_codes={404: CARBONBLACK_MSG_FILE_NOT_FOUND})
+            ret_val, response = self._make_rest_call(url, action_result, parse_response_json=False,
+                additional_succ_codes={404: CARBONBLACK_MSG_FILE_NOT_FOUND})
 
             if phantom.is_fail(ret_val):
                 return action_result.get_status()
@@ -1277,7 +1283,8 @@ class CarbonblackConnector(BaseConnector):
         else:
             self.debug_print(CARBONBLACK_GROUP_ID_MSG)
 
-        ret_val, body = self._make_rest_call("/v1/sensor/{0}".format(sensor_id), action_result, data=updated_sensor, method="put", additional_succ_codes={204: []})
+        ret_val, body = self._make_rest_call("/v1/sensor/{0}".format(sensor_id), action_result, data=updated_sensor,
+            method="put", additional_succ_codes={204: []})
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
@@ -1303,8 +1310,8 @@ class CarbonblackConnector(BaseConnector):
 
         if not ip_hostname and sensor_id is None:
             action_result = self.add_action_result(ActionResult(param))
-            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(phantom.APP_JSON_IP_HOSTNAME,
-                CARBONBLACK_JSON_SENSOR_ID))
+            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(
+                phantom.APP_JSON_IP_HOSTNAME, CARBONBLACK_JSON_SENSOR_ID))
 
         if sensor_id is not None:
 
@@ -1353,8 +1360,8 @@ class CarbonblackConnector(BaseConnector):
             return action_result.get_status()
 
         if not ip_hostname and sensor_id is None:
-            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(phantom.APP_JSON_IP_HOSTNAME,
-                CARBONBLACK_JSON_SENSOR_ID))
+            return action_result.set_status(phantom.APP_ERROR, "Neither {0} nor {1} specified. Please specify at-least one of them".format(
+                phantom.APP_JSON_IP_HOSTNAME, CARBONBLACK_JSON_SENSOR_ID))
 
         ret_val = self._get_system_info_from_cb(ip_hostname, action_result, sensor_id)
         if phantom.is_fail(ret_val):
@@ -1606,7 +1613,8 @@ class CarbonblackConnector(BaseConnector):
         for watchlist in watchlists:
             try:
                 watchlist['quoted_query'] = six.moves.urllib.parse.unquote(watchlist['search_query'][2:].replace('cb.urlver=1&', ''))
-                watchlist['query_type'] = CARBONBLACK_QUERY_TYPE_BINARY if watchlist['index_type'] == 'modules' else CARBONBLACK_QUERY_TYPE_PROCESS
+                watchlist['query_type'] = CARBONBLACK_QUERY_TYPE_BINARY if watchlist[
+                    'index_type'] == 'modules' else CARBONBLACK_QUERY_TYPE_PROCESS
             except:
                 pass
             action_result.add_data(watchlist)
@@ -1740,7 +1748,8 @@ class CarbonblackConnector(BaseConnector):
             # no logic to detect unescaped '%' characters
             for c in kvpair.split('=')[1]:
                 if c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~%":
-                    return action_result.set_status(phantom.APP_ERROR, "Unescaped non-reserved character '{0}' found in query; use percent-encoding".format(c))
+                    return action_result.set_status(phantom.APP_ERROR,
+                        "Unescaped non-reserved character '{0}' found in query; use percent-encoding".format(c))
 
         request = {
                 'index_type': index_type,
@@ -1827,7 +1836,8 @@ class CarbonblackConnector(BaseConnector):
             del search_data['cb.urlver']
 
         # Search results are returned as lists
-        ret_val, response = self._make_rest_call("/v{0}/{1}".format(api_version, search_type), action_result, method="post", data=search_data, additional_succ_codes={204: []})
+        ret_val, response = self._make_rest_call("/v{0}/{1}".format(
+            api_version, search_type), action_result, method="post", data=search_data, additional_succ_codes={204: []})
 
         if phantom.is_fail(ret_val):
             return (action_result.get_status(), None)
@@ -2182,8 +2192,9 @@ class CarbonblackConnector(BaseConnector):
 
 if __name__ == '__main__':
 
-    import pudb
     import argparse
+
+    import pudb
 
     pudb.set_trace()
 
