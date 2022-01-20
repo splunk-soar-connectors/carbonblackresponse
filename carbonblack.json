@@ -20,7 +20,7 @@
     ],
     "logo": "logo_carbonblack.svg",
     "logo_dark": "logo_carbonblack_dark.svg",
-    "license": "Copyright (c) 2016-2021 Splunk Inc.",
+    "license": "Copyright (c) 2016-2022 Splunk Inc.",
     "configuration": {
         "device_url": {
             "data_type": "string",
@@ -7702,7 +7702,7 @@
             },
             {
                 "module": "urllib3",
-                "input_file": "wheels/urllib3-1.26.7-py2.py3-none-any.whl"
+                "input_file": "wheels/urllib3-1.26.8-py2.py3-none-any.whl"
             }
         ]
     }
