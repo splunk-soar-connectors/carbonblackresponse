@@ -92,6 +92,7 @@ CARBONBLACK_ERR_FILE_EXISTS = "File id for sensor already exists. "
 CARBONBLACK_ERR_INVALID_PATH = "Windows cannot find specified path"
 CARBONBLACK_ERR_INVALID_DEST_FILE = "Please check if the destination filename already exists at the specified path"
 CARBONBLACK_ERR_INVALID_INTEGER_VALUE = 'Please provide a valid {msg} integer value in the "{param}"'
+CARBONBLACK_DEFAULT_TIMEOUT = 30
 MAX_POLL_TRIES = 10
 
 CARBONBLACK_FINISHED_PROCESSING = "Finished Processing {0:.0%}"
