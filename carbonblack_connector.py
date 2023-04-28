@@ -1681,7 +1681,8 @@ class CarbonblackConnector(BaseConnector):
         if requested_status in VALID_ALERT_STATUS:
             update_data['requested_status'] = requested_status
         else:
-            return action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_INVALID_ALERT_STATUS.format(status=', '.join(VALID_ALERT_STATUS)))
+            return action_result.set_status(
+                phantom.APP_ERROR, CARBONBLACK_ERROR_INVALID_ALERT_STATUS.format(status=', '.join(VALID_ALERT_STATUS)))
 
         set_ignored = param.get('set_ignored')
         if set_ignored:
