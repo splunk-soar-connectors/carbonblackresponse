@@ -8,4 +8,4 @@ repos:
     rev: v1.4.0
     hooks:
     -   id: detect-secrets
-        args: ['--no-verify', '--exclude-files', '^carbonblack.json$']
+        args: ['--no-verify', '--exclude-files', '^carbonblack.json$', '^CBR.postman_collection.json$']
