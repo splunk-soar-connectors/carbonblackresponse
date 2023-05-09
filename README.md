@@ -350,7 +350,7 @@ action_result.parameter.query | string |  `carbon black query`  |   "c:\\windows
 action_result.parameter.requested_status | string |  |   Resolved 
 action_result.parameter.set_ignored | numeric |  |   False  True 
 action_result.data.\*.result | string |  |   success 
-action_result.summary.Total records updated | numeric |  |   4  1 
+action_result.summary.total_records_updated | numeric |  |   4  1 
 action_result.summary.result | string |  |   success 
 action_result.message | string |  |   Result: success, Total records updated: 4 
 summary.total_objects | numeric |  |   1 
