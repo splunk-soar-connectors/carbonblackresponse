@@ -228,4 +228,4 @@ def display_file_details(provides, all_app_runs, context):
                 continue
             results.append(ctx_result)
 
-    return 'cb_file_details.html'
+    return 'carbonblack_file_details.html'

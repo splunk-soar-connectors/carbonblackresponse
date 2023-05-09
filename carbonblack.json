@@ -1866,7 +1866,7 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.summary.Total records updated",
+                    "data_path": "action_result.summary.total_records_updated",
                     "data_type": "numeric",
                     "example_values": [
                         4,

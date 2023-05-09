@@ -1701,7 +1701,7 @@ class CarbonblackConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        action_result.update_summary({'result': result['result'], 'Total records updated': total_results})
+        action_result.update_summary({'result': result['result'], 'total_records_updated': total_results})
 
         action_result.add_data(result)
 
