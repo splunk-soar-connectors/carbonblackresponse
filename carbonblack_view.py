@@ -1,6 +1,6 @@
 # File: carbonblack_view.py
 #
-# Copyright (c) 2016-2021 Splunk Inc.
+# Copyright (c) 2016-2023 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -228,4 +228,4 @@ def display_file_details(provides, all_app_runs, context):
                 continue
             results.append(ctx_result)
 
-    return 'cb_file_details.html'
+    return 'carbonblack_file_details.html'

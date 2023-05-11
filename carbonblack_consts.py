@@ -1,6 +1,6 @@
 # File: carbonblack_consts.py
 #
-# Copyright (c) 2016-2021 Splunk Inc.
+# Copyright (c) 2016-2023 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,21 +41,21 @@ CARBONBLACK_JSON_DESTINATION_PATH = "destination"
 CARBONBLACK_MSG_MORE_THAN_ONE = "More than one ONLINE system matched the endpoint ip/name."
 CARBONBLACK_MSG_MORE_THAN_ONE += "<br>Please specify input params that matches a single ONLINE endpoint.<br>Systems Found:<br>{systems_error}"
 
-CARBONBLACK_ERR_CONNECTIVITY_TEST = "Test Connectivity Failed"
+CARBONBLACK_ERROR_CONNECTIVITY_TEST = "Test Connectivity Failed"
 CARBONBLACK_SUCC_CONNECTIVITY_TEST = "Test Connectivity Passed"
-CARBONBLACK_ERR_PROCESS_SEARCH = "Process search failed"
-CARBONBLACK_ERR_INVALID_QUERY_TYPE = "Invalid query type, valid types are '{types}'"
-CARBONBLACK_ERR_INVALID_RANGE = "Invalid range, please specify in the format of start-end"
-CARBONBLACK_ERR_INVALID_ALERT_STATUS = "Invalid alert status, valid values are '{status}'"
+CARBONBLACK_ERROR_PROCESS_SEARCH = "Process search failed"
+CARBONBLACK_ERROR_INVALID_QUERY_TYPE = "Invalid query type, valid types are '{types}'"
+CARBONBLACK_ERROR_INVALID_RANGE = "Invalid range, please specify in the format of start-end"
+CARBONBLACK_ERROR_INVALID_ALERT_STATUS = "Invalid alert status, valid values are '{status}'"
 CARBONBLACK_SUCC_SYNC_EVENTS = "Successfully synchronized sensor events."
 CARBONBLACK_SUCC_QUARANTINE = "Quarantine action succeeded. It might take some time for the endpoint to get isolated."
 CARBONBLACK_SUCC_UNQUARANTINE = "Unquarantine action succeeded. It might take some time for the endpoint to take effect."
 CARBONBLACK_SUCC_BLOCK = "Block hash action succeeded. It might take some time for blacklisting to take effect."
 CARBONBLACK_SUCC_UNBLOCK = "Unblock hash action succeeded. It might take some time for unblocking to take effect."
 CARBONBLACK_MSG_FILE_NOT_FOUND = "File Not Found"
-CARBONBLACK_ERR_NO_ENDPOINTS = "Unable to find any endpoints with hostname/IP {0}"
+CARBONBLACK_ERROR_NO_ENDPOINTS = "Unable to find any endpoints with hostname/IP {0}"
 CARBONBLACK_SUCC_RESET_SESSION = "Sensor {session_id} successfully reset"
-CARBONBLACK_ERR_RESET_SESSION = "Session {session_id} not found or is in an invalid state to keep alive"
+CARBONBLACK_ERROR_RESET_SESSION = "Session {session_id} not found or is in an invalid state to keep alive"
 
 CARBONBLACK_ADDED_WATCHLIST = "Added alert"
 CARBONBLACK_ADDING_WATCHLIST = "Adding alert"
@@ -85,20 +85,20 @@ VALID_ALERT_STATUS = [CARBONBLACK_ALERT_STATUS_RESOLVED,
 
 CARBONBLACK_SLEEP_SECS = 5
 CARBONBLACK_COMMAND_FAILED = "Command {command} failed with code: {code}, desc: {desc}"
-CARBONBLACK_ERR_POLL_TIMEOUT = 'Could not get a connection to a live active session on the endpoint after {max_tries} polls.'
-CARBONBLACK_ERR_MULTI_ENDPOINTS = "{num_endpoints} endpoints matched (see results for a list). " \
+CARBONBLACK_ERROR_POLL_TIMEOUT = 'Could not get a connection to a live active session on the endpoint after {max_tries} polls.'
+CARBONBLACK_ERROR_MULTI_ENDPOINTS = "{num_endpoints} endpoints matched (see results for a list). " \
     "Please specify an IP/Host Name that uniquely identifies an online endpoint."
-CARBONBLACK_ERR_FILE_EXISTS = "File id for sensor already exists. "
-CARBONBLACK_ERR_INVALID_PATH = "Windows cannot find specified path"
-CARBONBLACK_ERR_INVALID_DEST_FILE = "Please check if the destination filename already exists at the specified path"
-CARBONBLACK_ERR_INVALID_INTEGER_VALUE = 'Please provide a valid {msg} integer value in the "{param}"'
+CARBONBLACK_ERROR_FILE_EXISTS = "File id for sensor already exists. "
+CARBONBLACK_ERROR_INVALID_PATH = "Windows cannot find specified path"
+CARBONBLACK_ERROR_INVALID_DEST_FILE = "Please check if the destination filename already exists at the specified path"
+CARBONBLACK_ERROR_INVALID_INTEGER_VALUE = 'Please provide a valid {msg} integer value in the "{param}"'
 MAX_POLL_TRIES = 10
 
 CARBONBLACK_FINISHED_PROCESSING = "Finished Processing {0:.0%}"
 
-CARBONBLACK_ERR_CODE_MSG = "Error code unavailable"
-CARBONBLACK_ERR_MSG = "Unknown error occurred. Please check the asset configuration and|or action parameters."
-CARBONBLACK_UNICODE_DAMMIT_TYPE_ERR_MSG = "Error occurred while connecting to the Carbon Black Response server."
-CARBONBLACK_UNICODE_DAMMIT_TYPE_ERR_MSG += " Please check the asset configuration and|or the action parameters."
-CARBONBLACK_ERR_UPDATE_ALERTS_PARAM_IDS = "Either 'query' or 'alert_ids' parameters are required for this action."
+CARBONBLACK_ERROR_CODE_MSG = "Error code unavailable"
+CARBONBLACK_ERROR_MSG = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+CARBONBLACK_UNICODE_DAMMIT_TYPE_ERROR_MSG = "Error occurred while connecting to the Carbon Black Response server."
+CARBONBLACK_UNICODE_DAMMIT_TYPE_ERROR_MSG += " Please check the asset configuration and|or the action parameters."
+CARBONBLACK_ERROR_UPDATE_ALERTS_PARAM_IDS = "Either 'query' or 'alert_ids' parameters are required for this action."
 CARBONBLACK_GROUP_ID_MSG = "Group ID unavailable"
