@@ -1,0 +1,1206 @@
+{
+	"info": {
+		"_postman_id": "f55b175c-6bb4-4353-b95e-3728a29c68c1",
+		"name": "CBR",
+		"description": "# Carbon Black Response\n\nThis collection contains call to endpoints used in **carbon black response** SOAR App\n\n# Prerequisites\n\nPlease set below collection variables in order to make requests work.\n\n  \n| Variable | Description |  \n|--|--|  \n| BASE_URL | URL of the Carbon Black response app. (EG. [https://10.1.1.1](https://10.1.1.1)) |  \n| API_TOKEN | API token for authentication |  \n| sensor_id | ID of the sensor to make requests to |  \n| group_id | group_id of the sensor |\n\n## Notes\n\n*   In case you get *Session XXXX not active*, you may need to check if the status is in active state by using `get session` request call.\n    *   If you get `status: \"closed\"`. You need to create new session using `create session` request\n    *   If you get `status: \"pending\"`. You need to wait for few seconds until status becomes active. You can check this by making repeated calls to `get session` request.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "version info",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/info",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"info"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create session",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"session_id = pm.response.json()['id']",
+							"pm.collectionVariables.set(\"session_id\", session_id)"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"sensor_id\": {{sensor_id}},\n    \"sensor_wait_timeout\": 10000\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get session",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "default"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "reset session",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/keepalive",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"keepalive"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create alert",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"alert_id = pm.response.json()['id']",
+							"pm.collectionVariables.set(\"alert_id\", alert_id)"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"index_type\": \"events\",\n    \"name\": \"PSCP_Started\",\n    \"search_query\": \"cb.urlver=1&q=md5%3A27801bdf0aaa0da87dbf7637396cd40d\",\n    \"readonly\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/watchlist",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"watchlist"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "memory dump",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const mem_dump_command = {",
+							"    method: \"POST\",",
+							"    url: `${pm.collectionVariables.get(\"BASE_URL\")}/api/v1/cblr/session/${pm.collectionVariables.get(\"session_id\")}/command`,",
+							"    header: {",
+							"        \"content-type\": \"application/json\",",
+							"        \"accept\": \"application/json\",",
+							"        \"X-Auth-Token\": pm.collectionVariables.get(\"API_TOKEN\")",
+							"    },",
+							"    body: {",
+							"        mode: \"raw\",",
+							"        raw: JSON.stringify(",
+							"            {",
+							"                \"session_id\": pm.environment.get(\"session_id\"),",
+							"                \"name\": \"memdump\",",
+							"                \"object\": \"C:\\\\Windows\\\\CarbonBlack\\\\Test\",",
+							"                \"compress\": false",
+							"            })",
+							"    }",
+							"}",
+							"",
+							"pm.sendRequest(mem_dump_command, function (err, res) {",
+							"    pm.environment.set(\"mem_dump_cmd_id\", res.json().id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "",
+						"value": "",
+						"type": "default"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/command/{{mem_dump_cmd_id}}?wait=true",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"command",
+						"{{mem_dump_cmd_id}}"
+					],
+					"query": [
+						{
+							"key": "wait",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "hunt file",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"params\": \"server_added_timestamp desc\",\n    \"start\": 0,\n    \"rows\": 10,\n    \"facet\": [\n        \"true\",\n        \"true\"\n    ],\n    \"cb.urlver\": [\n        \"1\"\n    ],\n    \"q\": [\n        \"md5:ACB36AD75A7DF5E5E8222EC02818D534\"\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/binary",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"binary"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "run query",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"params\": \"server_added_timestamp desc\",\n    \"start\": 0,\n    \"rows\": 10,\n    \"facet\": [\n        \"true\",\n        \"true\"\n    ],\n    \"cb.urlver\": [\n        \"1\"\n    ],\n    \"q\": [\n        \"company_name:Microsoft\"\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/binary",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"binary"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "list endpoints",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/sensor",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"sensor"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "list processes",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const list_process_command = {",
+							"    method: \"POST\",",
+							"    url: `${pm.collectionVariables.get(\"BASE_URL\")}/api/v1/cblr/session/${pm.collectionVariables.get(\"session_id\")}/command`,",
+							"    header: {",
+							"        \"content-type\": \"application/json\",",
+							"        \"accept\": \"application/json\",",
+							"        \"X-Auth-Token\": pm.collectionVariables.get(\"API_TOKEN\")",
+							"    },",
+							"    body: {",
+							"        mode: \"raw\",",
+							"        raw: JSON.stringify(",
+							"            {",
+							"                \"session_id\": pm.environment.get(\"session_id\"),",
+							"                \"name\": \"process list\",",
+							"                \"object\": \"\",",
+							"            })",
+							"    }",
+							"}",
+							"",
+							"pm.sendRequest(list_process_command, function (err, res) {",
+							"    pm.environment.set(\"list_process_cmd_id\", res.json().id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/command/{{list_process_cmd_id}}?wait=true",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"command",
+						"{{list_process_cmd_id}}"
+					],
+					"query": [
+						{
+							"key": "wait",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "list connections",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/process",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"process"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get license",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/license",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"license"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "list alerts",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/watchlist",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"watchlist"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sync events",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"event_log_flush_time\": \"Wed, 05 Jan 2022 10:01:07 GMT\",\n    \"group_id\": {{group_id}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/sensor/{{sensor_id}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"sensor",
+						"{{sensor_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get system info",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "default"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/sensor/{{sensor_id}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"sensor",
+						"{{sensor_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "quarantine device",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"network_isolation_enabled\": true,\n    \"group_id\": {{group_id}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/sensor/{{sensor_id}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"sensor",
+						"{{sensor_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "unquarantine device",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"network_isolation_enabled\": false,\n    \"group_id\": {{group_id}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/sensor/{{sensor_id}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"sensor",
+						"{{sensor_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "block hash",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"md5hash\": \"f2c7bb8acc97f92e987a2d4087d021b1\",\n    \"text\": \"Blocked by Phantom for container 4103\",\n    \"last_ban_time\": \"0\",\n    \"ban_count\": \"0\",\n    \"last_ban_host\": \"0\",\n    \"enabled\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/banning/blacklist",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"banning",
+						"blacklist"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "unblock hash",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/banning/blacklist/f2c7bb8acc97f92e987a2d4087d021b1",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"banning",
+						"blacklist",
+						"f2c7bb8acc97f92e987a2d4087d021b1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get file info",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/binary/ACB36AD75A7DF5E5E8222EC02818D534/summary",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"binary",
+						"ACB36AD75A7DF5E5E8222EC02818D534",
+						"summary"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "send file to server",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"file_id = pm.response.json()['id']",
+							"pm.collectionVariables.set(\"file_id\", file_id)"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/pdesai/Downloads/CBR.postman_collection.json"
+						}
+					],
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/file",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"file"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "put file",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const upload_file_command = {",
+							"    method: \"POST\",",
+							"    url: `${pm.collectionVariables.get(\"BASE_URL\")}/api/v1/cblr/session/${pm.collectionVariables.get(\"session_id\")}/command`,",
+							"    header: {",
+							"        \"content-type\": \"application/json\",",
+							"        \"accept\": \"application/json\",",
+							"        \"X-Auth-Token\": pm.collectionVariables.get(\"API_TOKEN\")",
+							"    },",
+							"    body: {",
+							"        mode: \"raw\",",
+							"        raw: JSON.stringify(",
+							"            {",
+							"                \"session_id\": pm.environment.get(\"session_id\"),",
+							"                \"name\": \"put file\",",
+							"                \"object\": \"C:\\\\windows\\\\system32\\\\test_file.json\",",
+							"                \"file_id\": pm.environment.get(\"file_id\"),",
+							"            }",
+							"        )",
+							"    }",
+							"}",
+							"",
+							"",
+							"pm.sendRequest(upload_file_command, function (err, res) {",
+							"    pm.environment.set(\"upload_file_command_id\", res.json().id);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "12e1115c894e95daa08725a59137b9bc3f0e4a7c",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/command/{{upload_file_command_id}}?wait=true",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"command",
+						"{{upload_file_command_id}}"
+					],
+					"query": [
+						{
+							"key": "wait",
+							"value": "true"
+						}
+					]
+				},
+				"description": "Please run send file to server before running this request to upload file to server."
+			},
+			"response": []
+		},
+		{
+			"name": "run command",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const run_commannd_command = {",
+							"    method: \"POST\",",
+							"    url: `${pm.collectionVariables.get(\"BASE_URL\")}/api/v1/cblr/session/${pm.collectionVariables.get(\"session_id\")}/command`,",
+							"    header: {",
+							"        \"content-type\": \"application/json\",",
+							"        \"accept\": \"application/json\",",
+							"        \"X-Auth-Token\": pm.collectionVariables.get(\"API_TOKEN\")",
+							"    },",
+							"    body: {",
+							"        mode: \"raw\",",
+							"        raw: JSON.stringify(",
+							"            {",
+							"                \"session_id\": pm.environment.get(\"session_id\"),",
+							"                \"name\": \"get file\",",
+							"                \"object\": \"c:\\\\windows\\\\system32\\\\svchost.exe\",",
+							"            })",
+							"    }",
+							"}",
+							"",
+							"pm.sendRequest(run_commannd_command, function (err, res) {",
+							"    pm.environment.set(\"run_command_cmd_id\", res.json().id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/command/{{run_command_cmd_id}}?wait=true",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"command",
+						"{{run_command_cmd_id}}"
+					],
+					"query": [
+						{
+							"key": "wait",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "terminate process",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const terminate_process_command = {",
+							"    method: \"POST\",",
+							"    url: `${pm.collectionVariables.get(\"BASE_URL\")}/api/v1/cblr/session/${pm.collectionVariables.get(\"session_id\")}/command`,",
+							"    header: {",
+							"        \"content-type\": \"application/json\",",
+							"        \"accept\": \"application/json\",",
+							"        \"X-Auth-Token\": pm.collectionVariables.get(\"API_TOKEN\")",
+							"    },",
+							"    body: {",
+							"        mode: \"raw\",",
+							"        raw: JSON.stringify(",
+							"            {",
+							"                \"session_id\": pm.environment.get(\"session_id\"),",
+							"                \"name\": \"kill\", ",
+							"                \"object\": 99999999999999",
+							"            }",
+							"        )",
+							"    }",
+							"}",
+							"",
+							"pm.sendRequest(terminate_process_command, function (err, res) {",
+							"    pm.environment.set(\"terminate_process_command_id\", res.json().id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/command?wait=true",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"command"
+					],
+					"query": [
+						{
+							"key": "wait",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get file",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const get_file_command = {",
+							"    method: \"POST\",",
+							"    url: `${pm.collectionVariables.get(\"BASE_URL\")}/api/v1/cblr/session/${pm.collectionVariables.get(\"session_id\")}/command`,",
+							"    header: {",
+							"        \"content-type\": \"application/json\",",
+							"        \"accept\": \"application/json\",",
+							"        \"X-Auth-Token\": pm.collectionVariables.get(\"API_TOKEN\")",
+							"    },",
+							"    body: {",
+							"        mode: \"raw\",",
+							"        raw: JSON.stringify(",
+							"            {",
+							"                \"session_id\": pm.environment.get(\"session_id\"),",
+							"                \"name\": \"get file\",",
+							"                \"object\": \"c:\\\\windows\\\\system32\\\\svchost.exe\",",
+							"            })",
+							"    }",
+							"}",
+							"",
+							"pm.sendRequest(get_file_command, function (err, res) {",
+							"    pm.environment.set(\"get_file_command_id\", res.json().id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/v1/cblr/session/{{session_id}}/command/{{get_file_command_id}}?wait=true",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cblr",
+						"session",
+						"{{session_id}}",
+						"command",
+						"{{get_file_command_id}}"
+					],
+					"query": [
+						{
+							"key": "wait",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update alerts",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Auth-Token",
+						"value": "{{API_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"query\": \"c:\\\\windows\\\\syswow64\\\\windowspowershell\\\\v1.0\\\\powershell.exe\",\n    \"alert_ids\": \"1, 2, 3\",\n    \"requested_status\": \"\",\n    \"set_ignored\": \"\",\n    \"assigned_to\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/v2/alert",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"v2",
+						"alert"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "API_TOKEN",
+			"value": ""
+		},
+		{
+			"key": "BASE_URL",
+			"value": ""
+		},
+		{
+			"key": "sensor_id",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "group_id",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "mem_dump_cmd_id",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "session_id",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "file_id",
+			"value": ""
+		},
+		{
+			"key": "alert_id",
+			"value": ""
+		},
+		{
+			"key": "get_file_command_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

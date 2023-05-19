@@ -1,11 +1,18 @@
 # File: carbonblack_view.py
-# Copyright (c) 2016-2021 Splunk Inc.
 #
-# Licensed under Apache 2.0 (https://www.apache.org/licenses/LICENSE-2.0.txt)
+# Copyright (c) 2016-2023 Splunk Inc.
 #
-
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions
+# and limitations under the License.
 import carbonblack_consts as consts
-
 
 # pylint: disable=E1601
 
@@ -19,9 +26,11 @@ def fill_table(query_type, table, data, result):
     if query_type == consts.CARBONBLACK_QUERY_TYPE_BINARY:
         table['headers'] = ["MD5", "Endpoints", "Signed", "Company Name", "Product Name", "Is Executable", "File Length", "Filenames"]
     elif query_type == consts.CARBONBLACK_QUERY_TYPE_ALERT:
-        table['headers'] = ["Username", "Alert Type", "Watchlist ID", "Feed Name", "Created Time", "IOC Type", "Watchlist Name", "Alert Severity", "Status", "Unique ID"]
+        table['headers'] = ["Username", "Alert Type", "Watchlist ID", "Feed Name", "Created Time", "IOC Type", "Watchlist Name",
+            "Alert Severity", "Status", "Unique ID"]
     else:
-        table['headers'] = ["Process Name", "Process Path", "MD5", "User Name", "Host Name", "Start", "PID", "Parent PID", "Host Type", "OS", "Unique ID", "Cmdline"]
+        table['headers'] = ["Process Name", "Process Path", "MD5", "User Name", "Host Name", "Start", "PID", "Parent PID", "Host Type",
+            "OS", "Unique ID", "Cmdline"]
     # every action result will have a single data
     data_rows = data['results']
 
@@ -219,4 +228,4 @@ def display_file_details(provides, all_app_runs, context):
                 continue
             results.append(ctx_result)
 
-    return 'cb_file_details.html'
+    return 'carbonblack_file_details.html'
