@@ -2,7 +2,7 @@
 # Carbon Black Response
 
 Publisher: Splunk  
-Connector Version: 2.3.4  
+Connector Version: 2.3.5  
 Product Vendor: Bit9  
 Product Name: Carbon Black  
 Product Version Supported (regex): "[5-7]\\.[0-9]\\.\*"  
