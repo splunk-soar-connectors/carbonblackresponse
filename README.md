@@ -2,7 +2,7 @@
 # Carbon Black Response
 
 Publisher: Splunk  
-Connector Version: 2.3.4  
+Connector Version: 2.3.5  
 Product Vendor: Bit9  
 Product Name: Carbon Black  
 Product Version Supported (regex): "[5-7]\\.[0-9]\\.\*"  
@@ -11,7 +11,7 @@ Minimum Product Version: 5.5.0
 This app supports executing various endpoint-based investigative and containment actions on Carbon Black Response
 
 [comment]: # " File: README.md"
-[comment]: # "Copyright (c) 2016-2023 Splunk Inc."
+[comment]: # "Copyright (c) 2016-2024 Splunk Inc."
 [comment]: # ""
 [comment]: # "Licensed under the Apache License, Version 2.0 (the 'License');"
 [comment]: # "you may not use this file except in compliance with the License."
