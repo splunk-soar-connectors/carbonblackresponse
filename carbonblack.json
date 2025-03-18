@@ -20,7 +20,7 @@
     ],
     "logo": "logo_carbonblack.svg",
     "logo_dark": "logo_carbonblack_dark.svg",
-    "license": "Copyright (c) 2016-2024 Splunk Inc.",
+    "license": "Copyright (c) 2016-2025 Splunk Inc.",
     "configuration": {
         "device_url": {
             "data_type": "string",
@@ -5556,6 +5556,10 @@
                     "example_values": [
                         1
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.ph_0",
+                    "data_type": "ph"
                 }
             ],
             "versions": "EQ(*)"
