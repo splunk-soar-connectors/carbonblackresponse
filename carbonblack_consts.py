@@ -1,6 +1,6 @@
 # File: carbonblack_consts.py
 #
-# Copyright (c) 2016-2024 Splunk Inc.
+# Copyright (c) 2016-2025 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,29 +65,30 @@ CARBONBLACK_USING_BASE_URL = "Using base url: {base_url}"
 CARBONBLACK_RUNNING_QUERY = "Running query"
 CARBONBLACK_DISPLAYING_RESULTS_TOTAL = "Displaying {displaying} '{query_type}' results of total {total}"
 
-CARBONBLACK_QUERY_TYPE_ALERT = 'alert'
-CARBONBLACK_QUERY_TYPE_BINARY = 'binary'
-CARBONBLACK_QUERY_TYPE_PROCESS = 'process'
+CARBONBLACK_QUERY_TYPE_ALERT = "alert"
+CARBONBLACK_QUERY_TYPE_BINARY = "binary"
+CARBONBLACK_QUERY_TYPE_PROCESS = "process"
 
-VALID_QUERY_TYPE = [CARBONBLACK_QUERY_TYPE_ALERT,
-                    CARBONBLACK_QUERY_TYPE_BINARY,
-                    CARBONBLACK_QUERY_TYPE_PROCESS]
+VALID_QUERY_TYPE = [CARBONBLACK_QUERY_TYPE_ALERT, CARBONBLACK_QUERY_TYPE_BINARY, CARBONBLACK_QUERY_TYPE_PROCESS]
 
-CARBONBLACK_ALERT_STATUS_RESOLVED = 'Resolved'
-CARBONBLACK_ALERT_STATUS_FALSE_POSITIVE = 'False Positive'
-CARBONBLACK_ALERT_STATUS_IN_PROGRESS = 'In Progress'
-CARBONBLACK_ALERT_STATUS_UNRESOLVED = 'Unresolved'
+CARBONBLACK_ALERT_STATUS_RESOLVED = "Resolved"
+CARBONBLACK_ALERT_STATUS_FALSE_POSITIVE = "False Positive"
+CARBONBLACK_ALERT_STATUS_IN_PROGRESS = "In Progress"
+CARBONBLACK_ALERT_STATUS_UNRESOLVED = "Unresolved"
 
-VALID_ALERT_STATUS = [CARBONBLACK_ALERT_STATUS_RESOLVED,
-                      CARBONBLACK_ALERT_STATUS_FALSE_POSITIVE,
-                      CARBONBLACK_ALERT_STATUS_IN_PROGRESS,
-                      CARBONBLACK_ALERT_STATUS_UNRESOLVED]
+VALID_ALERT_STATUS = [
+    CARBONBLACK_ALERT_STATUS_RESOLVED,
+    CARBONBLACK_ALERT_STATUS_FALSE_POSITIVE,
+    CARBONBLACK_ALERT_STATUS_IN_PROGRESS,
+    CARBONBLACK_ALERT_STATUS_UNRESOLVED,
+]
 
 CARBONBLACK_SLEEP_SECS = 5
 CARBONBLACK_COMMAND_FAILED = "Command {command} failed with code: {code}, desc: {desc}"
-CARBONBLACK_ERROR_POLL_TIMEOUT = 'Could not get a connection to a live active session on the endpoint after {max_tries} polls.'
-CARBONBLACK_ERROR_MULTI_ENDPOINTS = "{num_endpoints} endpoints matched (see results for a list). " \
-    "Please specify an IP/Host Name that uniquely identifies an online endpoint."
+CARBONBLACK_ERROR_POLL_TIMEOUT = "Could not get a connection to a live active session on the endpoint after {max_tries} polls."
+CARBONBLACK_ERROR_MULTI_ENDPOINTS = (
+    "{num_endpoints} endpoints matched (see results for a list). Please specify an IP/Host Name that uniquely identifies an online endpoint."
+)
 CARBONBLACK_ERROR_FILE_EXISTS = "File id for sensor already exists. "
 CARBONBLACK_ERROR_INVALID_PATH = "Windows cannot find specified path"
 CARBONBLACK_ERROR_INVALID_DEST_FILE = "Please check if the destination filename already exists at the specified path"
