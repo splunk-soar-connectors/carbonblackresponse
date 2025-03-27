@@ -1,28 +1,29 @@
 Splunk SOAR Carbon Black Response
-Copyright (c) 2016-2024 Splunk Inc.
+Copyright (c) 2016-2025 Splunk Inc.
 
-Third-party Software Attributions:
+Third Party Software Attributions:
 
-Library: beautifulsoup4
+Name: beautifulsoup4
 Version: 4.9.1
+Author: Leonard Richardson
 License: MIT
-Copyright 2004-2017 Leonard Richardson
-Copyright 2004-2019 Leonard Richardson
-Copyright 2018 Isaac Muse
 
-Library: parse
+Name: parse
 Version: 1.17.0
-License: MIT
-Copyright 2012-2019 Richard Jones <richard@python.org>
-Copyright 2012-2020 Richard Jones <richard@python.org>
-Copyright 2012-2020 Richard Jones <richard@python.org>
+Author: Richard Jones
+License: UNKNOWN
 
-Library: python-magic
+Name: python-magic
 Version: 0.4.18
+Author: Adam Hupp
 License: MIT
-Copyright 2001-2014 Adam Hupp
 
-Library: six
+Name: six
 Version: 1.15.0
+Author: Benjamin Peterson
 License: MIT
-Copyright 2010-2020 Benjamin Peterson
+
+Name: soupsieve
+Version: 2.6
+Author:
+License:
