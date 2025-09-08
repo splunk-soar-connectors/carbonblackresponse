@@ -1,7 +1,7 @@
 # Carbon Black Response
 
 Publisher: Splunk <br>
-Connector Version: 2.3.5 <br>
+Connector Version: 2.3.6 <br>
 Product Vendor: Bit9 <br>
 Product Name: Carbon Black <br>
 Minimum Product Version: 5.5.0
