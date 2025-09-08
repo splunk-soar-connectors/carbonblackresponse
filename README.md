@@ -1,9 +1,9 @@
 # Carbon Black Response
 
-Publisher: Splunk \
-Connector Version: 2.3.5 \
-Product Vendor: Bit9 \
-Product Name: Carbon Black \
+Publisher: Splunk <br>
+Connector Version: 2.3.5 <br>
+Product Vendor: Bit9 <br>
+Product Name: Carbon Black <br>
 Minimum Product Version: 5.5.0
 
 This app supports executing various endpoint-based investigative and containment actions on Carbon Black Response
@@ -27,37 +27,37 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 
 ### Supported Actions
 
-[test connectivity](#action-test-connectivity) - Validate the asset configuration by attempting to connect. This action runs a quick query on the device to check the connection and credentials \
-[hunt file](#action-hunt-file) - Hunt for a binary file on the network by querying for the MD5 hash of it on the Carbon Black Response device. This utilizes Carbon Black Response's binary search feature to look for files on the hard drives of endpoints \
-[create alert](#action-create-alert) - Create an alert/watchlist \
-[update alerts](#action-update-alerts) - Update or resolve an alert \
-[run query](#action-run-query) - Run a search query on the device \
-[list alerts](#action-list-alerts) - List all the alerts/watchlists configured on the device \
-[list endpoints](#action-list-endpoints) - List all the endpoints/sensors configured on the device \
-[quarantine device](#action-quarantine-device) - Quarantine the endpoint \
-[unquarantine device](#action-unquarantine-device) - Unquarantine the endpoint \
-[sync events](#action-sync-events) - Force a sensor to sync all queued events to the server \
-[get system info](#action-get-system-info) - Get information about an endpoint \
-[list processes](#action-list-processes) - List the running processes on a machine \
-[terminate process](#action-terminate-process) - Kill running processes on a machine \
-[get file](#action-get-file) - Download a file from Carbon Black Response and add it to the vault \
-[put file](#action-put-file) - Upload file to a Windows hostname \
-[run command](#action-run-command) - Issue a Carbon Black Response command by providing the command name and the command's parameters as the 'data' \
-[execute program](#action-execute-program) - Execute a process \
-[memory dump](#action-memory-dump) - Memory dump for a specified path \
-[reset session](#action-reset-session) - Tell the server to reset the sensor "sensor_wait_timeout" \
-[get file info](#action-get-file-info) - Get info about a file from Carbon Black Response \
-[block hash](#action-block-hash) - Add a hash to the Carbon Black Response blacklist \
-[unblock hash](#action-unblock-hash) - Unblock the hash \
-[list connections](#action-list-connections) - List all of the connections from a given process name, PID, or Carbon Black process ID \
-[on poll](#action-on-poll) - Ingests unresolved alerts into Phantom \
+[test connectivity](#action-test-connectivity) - Validate the asset configuration by attempting to connect. This action runs a quick query on the device to check the connection and credentials <br>
+[hunt file](#action-hunt-file) - Hunt for a binary file on the network by querying for the MD5 hash of it on the Carbon Black Response device. This utilizes Carbon Black Response's binary search feature to look for files on the hard drives of endpoints <br>
+[create alert](#action-create-alert) - Create an alert/watchlist <br>
+[update alerts](#action-update-alerts) - Update or resolve an alert <br>
+[run query](#action-run-query) - Run a search query on the device <br>
+[list alerts](#action-list-alerts) - List all the alerts/watchlists configured on the device <br>
+[list endpoints](#action-list-endpoints) - List all the endpoints/sensors configured on the device <br>
+[quarantine device](#action-quarantine-device) - Quarantine the endpoint <br>
+[unquarantine device](#action-unquarantine-device) - Unquarantine the endpoint <br>
+[sync events](#action-sync-events) - Force a sensor to sync all queued events to the server <br>
+[get system info](#action-get-system-info) - Get information about an endpoint <br>
+[list processes](#action-list-processes) - List the running processes on a machine <br>
+[terminate process](#action-terminate-process) - Kill running processes on a machine <br>
+[get file](#action-get-file) - Download a file from Carbon Black Response and add it to the vault <br>
+[put file](#action-put-file) - Upload file to a Windows hostname <br>
+[run command](#action-run-command) - Issue a Carbon Black Response command by providing the command name and the command's parameters as the 'data' <br>
+[execute program](#action-execute-program) - Execute a process <br>
+[memory dump](#action-memory-dump) - Memory dump for a specified path <br>
+[reset session](#action-reset-session) - Tell the server to reset the sensor "sensor_wait_timeout" <br>
+[get file info](#action-get-file-info) - Get info about a file from Carbon Black Response <br>
+[block hash](#action-block-hash) - Add a hash to the Carbon Black Response blacklist <br>
+[unblock hash](#action-unblock-hash) - Unblock the hash <br>
+[list connections](#action-list-connections) - List all of the connections from a given process name, PID, or Carbon Black process ID <br>
+[on poll](#action-on-poll) - Ingests unresolved alerts into Phantom <br>
 [get license](#action-get-license) - Gets the license information of the device
 
 ## action: 'test connectivity'
 
 Validate the asset configuration by attempting to connect. This action runs a quick query on the device to check the connection and credentials
 
-Type: **test** \
+Type: **test** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -72,7 +72,7 @@ No Output
 
 Hunt for a binary file on the network by querying for the MD5 hash of it on the Carbon Black Response device. This utilizes Carbon Black Response's binary search feature to look for files on the hard drives of endpoints
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 This action gives back paginated results. The 'range' parameter can be used to control the number and indexes of the search results.<br>This action requires only a Carbon Black Response <b>api_token</b>. The Carbon Black Response user assigned to that token does not require any privileges (i.e. No Access).
@@ -270,7 +270,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Create an alert/watchlist
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 Carbon Black Response supports 'watchlists' which are customized alerts that search for a binary or running process on an endpoint that matches a certain query. See the carbonblack_app playbook for examples.<br>This action requires only a Carbon Black Response <b>api_token</b>. The Carbon Black Response user assigned to that token does not require any privileges (i.e. No Access).
@@ -320,7 +320,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Update or resolve an alert
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 Allows for update of one or more alerts by alert id(s) or by query.
@@ -356,7 +356,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Run a search query on the device
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 This action requires only a Carbon Black Response <b>api_token</b>. The Carbon Black Response user assigned to that token does not require any privileges (i.e. No Access).
@@ -538,7 +538,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 List all the alerts/watchlists configured on the device
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 This action requires only a Carbon Black Response <b>api_token</b>. The Carbon Black Response user assigned to that token does not require any privileges (i.e. No Access).
@@ -579,7 +579,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 List all the endpoints/sensors configured on the device
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 This action requires Carbon Black Response view privileges to list sensors and therefore a list of endpoints known to Carbon Black Response. If this privilege is not assigned to the asset <b>api_token</b>, the action will succeed and return an empty list.
@@ -654,7 +654,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Quarantine the endpoint
 
-Type: **contain** \
+Type: **contain** <br>
 Read only: **False**
 
 Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period. Carbon Black Response also supports partial matches for hostnames, e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i>. The action will return an <b>error</b> if multiple <b>online</b> endpoints match the input parameter.<br>This action requires administrative privileges to search for the given endpoints and set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
@@ -681,7 +681,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Unquarantine the endpoint
 
-Type: **correct** \
+Type: **correct** <br>
 Read only: **False**
 
 Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period. Carbon Black Response also supports partial matches for hostnames, e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i>. The action will return an <b>error</b> if multiple <b>online</b> endpoints match the input parameter.<br>This action requires administrative privileges to search for the given endpoints and re-set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
@@ -708,7 +708,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Force a sensor to sync all queued events to the server
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 Force the specified sensor to synchronize all queued events that have been observed on the endpoint but have not yet been uploaded to the server and made searchable. This may generate a significant amount of network traffic because it overrides the default behavior that rate-limits the RabbitMQ messages to conserve bandwidth. As specified by the Carbon Black Response API, this flush is implemented by writing a future date to the sensor's <b>event_log_flush_time</b>. In this case, the current time plus one day is used because that is how it is done in the official Python API (https://github.com/carbonblack/cbapi-python).<br>If <b>sensor_id</b> is specified, <b>ip_hostname</b> will be ignored.
@@ -737,7 +737,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get information about an endpoint
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 This action requires Carbon Black Response view privileges to list sensors and therefore a list of endpoints known to Carbon Black Response. If this privilege is not assigned to the asset <b>api_token</b>, the action will succeed and return an empty list.<br>If <b>sensor_id</b> is specified, other input parameters will be ignored.
@@ -817,7 +817,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 List the running processes on a machine
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 If <b>sensor_id</b> is specified, other input parameters will be ignored (and removed from the resultant <i>parameter</i> dictionary), else the App searches for endpoints that match the value specified in <b>ip_hostname</b>. Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period. Carbon Black Response also supports partial matches for hostnames, for e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i> and in this case, the action will try to get the <i>process list</i> for all the matching endpoints.<br>This action requires Carbon Black Response administrative privileges. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
@@ -855,7 +855,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Kill running processes on a machine
 
-Type: **contain** \
+Type: **contain** <br>
 Read only: **False**
 
 If <b>sensor_id</b> is specified, other input parameters will be ignored (and removed from the resultant <i>parameter</i> dictionary), else the App searches for endpoints that match the value specified in <b>ip_hostname</b>. Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period of time. Carbon Black Response also supports partial matches for hostnames, for e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i>. If the input hostname matches more than one ONLINE endpoint the action will treat this as an error.<br>This action requires Carbon Black Response administrative privileges. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
@@ -897,7 +897,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Download a file from Carbon Black Response and add it to the vault
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 To get a file from a source, provide a sensor_id, file_source, optional offset, and optional get_count. Otherwise, provide a hash, which also tries to get file information from the Carbon Black Response server if available. If the hash is provided, all the other input parameters will be ignored.<br>A file that shows up in the results of the <b>hunt file</b> action might still not be available for download in case the endpoint sensor is not connected to the server. This action requires only a Carbon Black Response <b>api_token</b>. The Carbon Black Response user assigned to that token does not require any privileges (i.e. No Access).<br>Note: For Carbon Black Response version 7.x, the 'get file' action sometimes fails for valid hashes. The action replicates the API result.
@@ -975,7 +975,7 @@ action_result.parameter.ph_0 | ph | | |
 
 Upload file to a Windows hostname
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -1017,7 +1017,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Issue a Carbon Black Response command by providing the command name and the command's parameters as the 'data'
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -1067,7 +1067,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Execute a process
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -1114,7 +1114,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Memory dump for a specified path
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 This action will work for the windows endpoint.
@@ -1161,7 +1161,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Tell the server to reset the sensor "sensor_wait_timeout"
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -1186,7 +1186,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get info about a file from Carbon Black Response
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 This action requires only a Carbon Black Response <b>api_token</b>. The Carbon Black Response user assigned to that token does not require any privileges (i.e. No Access).
@@ -1259,7 +1259,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Add a hash to the Carbon Black Response blacklist
 
-Type: **contain** \
+Type: **contain** <br>
 Read only: **False**
 
 This action requires Carbon Black Response administrative privileges. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
@@ -1288,7 +1288,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Unblock the hash
 
-Type: **correct** \
+Type: **correct** <br>
 Read only: **False**
 
 This action requires Carbon Black Response administrative privileges. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
@@ -1315,7 +1315,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 List all of the connections from a given process name, PID, or Carbon Black process ID
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 If either a process name or PID is provided, then a hostname must be provided as well. If a PID is provided, the process name parameter will be ignored. If a Carbon Black process ID is given, all of the other parameters will be ignored. The Carbon Black process ID refers to the internal ID which Carbon Black Response assigns to every process. It can be found in the action result of the hunt file in <b>action_result.data.\*.process.results.\*.id</b> or in the output of this action.
@@ -1358,7 +1358,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Ingests unresolved alerts into Phantom
 
-Type: **ingest** \
+Type: **ingest** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -1378,7 +1378,7 @@ No Output
 
 Gets the license information of the device
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 #### Action Parameters
