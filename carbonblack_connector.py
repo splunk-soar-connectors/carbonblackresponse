@@ -1,6 +1,6 @@
 # File: carbonblack_connector.py
 #
-# Copyright (c) 2016-2025 Splunk Inc.
+# Copyright (c) 2016-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1157,7 +1157,9 @@ class CarbonblackConnector(BaseConnector):
             # Download file from server
             url = f"/v1/cblr/session/{session_id}/file/{file_id}/content"
 
-            response = requests.get(f"{self._rest_uri}{url}", headers={"X-Auth-Token": self._api_token}, stream=True, verify=False)  # nosemgrep
+            ret_val, response = self._make_rest_call(url, action_result, parse_response_json=False)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
 
             guid = uuid.uuid4()
 
@@ -1410,6 +1412,16 @@ class CarbonblackConnector(BaseConnector):
         if not sensors:
             return (action_result.set_status(phantom.APP_ERROR, "Unable to find endpoint, sensor list was empty"), None)
 
+        if phantom.is_ip(ip_hostname):
+            sensors = [
+                sensor
+                for sensor in sensors
+                if any(adapter.split(",", 1)[0].strip() == ip_hostname for adapter in sensor.get("network_adapters", "").split("|"))
+            ]
+        else:
+            normalized_hostname = ip_hostname.rstrip(".").casefold()
+            sensors = [sensor for sensor in sensors if str(sensor.get("computer_name", "")).rstrip(".").casefold() == normalized_hostname]
+
         sensors = [x for x in sensors if x.get("status") == "Online"]
 
         if not sensors:
@@ -1452,6 +1464,15 @@ class CarbonblackConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return (action_result.get_status(), None)
 
+        ret_val, updated_sensor = self._make_rest_call(f"/v1/sensor/{endpoint_id}", action_result)
+        if phantom.is_fail(ret_val):
+            return (action_result.get_status(), None)
+        if bool(updated_sensor.get("network_isolation_enabled")) != state:
+            return (
+                action_result.set_status(phantom.APP_ERROR, "Endpoint isolation state was not confirmed by the server"),
+                None,
+            )
+
         return (phantom.APP_SUCCESS, sensors)
 
     def _unblock_hash(self, param):
@@ -1462,9 +1483,7 @@ class CarbonblackConnector(BaseConnector):
         url = f"/v1/banning/blacklist/{unblock_hash}"
 
         # make a rest call to unblock the hash
-        ret_val, response = self._make_rest_call(
-            url, action_result, method="delete", parse_response_json=False, additional_succ_codes={409: None}
-        )
+        ret_val, response = self._make_rest_call(url, action_result, method="delete", parse_response_json=False)
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
@@ -1522,9 +1541,7 @@ class CarbonblackConnector(BaseConnector):
         data["enabled"] = True
 
         # make a rest call to set the hash state
-        ret_val, response = self._make_rest_call(
-            "/v1/banning/blacklist", action_result, method="post", data=data, parse_response_json=False, additional_succ_codes={409: None}
-        )
+        ret_val, response = self._make_rest_call("/v1/banning/blacklist", action_result, method="post", data=data, parse_response_json=False)
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
@@ -2013,21 +2030,34 @@ class CarbonblackConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             self.debug_print(action_result.get_message())
             self.set_status(phantom.APP_ERROR, action_result.get_message())
-            return phantom.APP_ERROR
+            return None
 
-        total_results = response.get("total_results")
-        result = response["results"]
+        try:
+            total_results = int(response["total_results"])
+            result = response["results"]
+            if total_results < 0 or not isinstance(result, list):
+                raise ValueError
+        except (KeyError, TypeError, ValueError):
+            action_result.set_status(phantom.APP_ERROR, "Carbon Black returned invalid pagination metadata")
+            return None
 
         # start indicates records which helps to traverse the records
         start = len(result)
         result_list.extend(result)
+        if max_containers and int(max_containers) <= len(result_list):
+            return result_list[:max_containers]
+        page_count = 1
         while start < total_results:
+            page_count += 1
+            if page_count > MAX_PAGINATION_PAGES:
+                action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
+                return None
             endpoint_temp = f"{endpoint}&start={start}"
             ret_val, response = self._make_rest_call(endpoint_temp, action_result)
             if phantom.is_fail(ret_val):
                 self.debug_print(action_result.get_message())
                 self.set_status(phantom.APP_ERROR, action_result.get_message())
-                return phantom.APP_ERROR
+                return None
 
             result = response["results"]
             result_list.extend(result)
@@ -2051,6 +2081,8 @@ class CarbonblackConnector(BaseConnector):
         action_result = self.add_action_result(phantom.ActionResult(param))
         max_containers = None
 
+        checkpoint_time = datetime.datetime.now().strftime(DT_STR_FORMAT)
+
         if self.is_poll_now():
             # Manual poll
             max_containers = int(param.get(phantom.APP_JSON_CONTAINER_COUNT))
@@ -2067,11 +2099,8 @@ class CarbonblackConnector(BaseConnector):
             )
 
         result_list = self._paginator(endpoint, action_result, max_containers)
-
-        if not self.is_poll_now():
-            # save last_ingested_time into the state file
-            self._state["last_ingested_time"] = datetime.datetime.now().strftime(DT_STR_FORMAT)
-            self.save_state(self._state)
+        if result_list is None:
+            return action_result.get_status()
 
         for result in result_list:
             cef = {}
@@ -2101,6 +2130,10 @@ class CarbonblackConnector(BaseConnector):
                 self.debug_print(f"stat/msg {status}/{msg}")
                 action_result.set_status(phantom.APP_ERROR, f"Container creation failed: {msg}")
                 return status
+
+        if not self.is_poll_now():
+            self._state["last_ingested_time"] = checkpoint_time
+            self.save_state(self._state)
 
         return action_result.set_status(phantom.APP_SUCCESS)
 

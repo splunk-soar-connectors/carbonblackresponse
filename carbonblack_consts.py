@@ -1,6 +1,6 @@
 # File: carbonblack_consts.py
 #
-# Copyright (c) 2016-2025 Splunk Inc.
+# Copyright (c) 2016-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,6 +94,8 @@ CARBONBLACK_ERROR_INVALID_PATH = "Windows cannot find specified path"
 CARBONBLACK_ERROR_INVALID_DEST_FILE = "Please check if the destination filename already exists at the specified path"
 CARBONBLACK_ERROR_INVALID_INTEGER_VALUE = 'Please provide a valid {msg} integer value in the "{param}"'
 MAX_POLL_TRIES = 10
+MAX_PAGINATION_PAGES = 1000
+CARBONBLACK_ERROR_PAGINATION_LIMIT = "Alert pagination exceeded the safe page limit"
 
 CARBONBLACK_FINISHED_PROCESSING = "Finished Processing {0:.0%}"
 
