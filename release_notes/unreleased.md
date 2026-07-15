@@ -1,3 +1,8 @@
 **Unreleased**
 
-* Added secure TLS defaults, validated downloads, exact endpoint isolation, bounded polling, reliable checkpoints, and safe widget rendering.
+* Enabled TLS certificate verification by default and routed file downloads through the configured REST client.
+* Required exact endpoint matches and verified that endpoint isolation changes were applied by the server.
+* Reported conflicting hash ban and unban requests as failures instead of treating them as successful.
+* Bounded alert pagination and honored the configured maximum container count.
+* Advanced the ingestion checkpoint only after all retrieved alerts were processed successfully.
+* Escaped dynamic values rendered in file-detail and query-result widgets.
