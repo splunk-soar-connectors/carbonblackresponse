@@ -11,7 +11,7 @@
 {% block widget_content %}
   <!-- Main Start Block -->
   <!-- File: carbonblack_file_details.html
-  Copyright (c) 2016-2025 Splunk Inc.
+  Copyright (c) 2016-2026 Splunk Inc.
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
@@ -85,23 +85,17 @@
           {% endif %}
           <a style="font-size: large"
              href="javascript:;"
-             onclick="context_menu(this, [{'contains': ['md5', 'hash'], 'value': '{{ result.md5 }}' }], 0, {{ container.id }}, null, false);">
+             onclick="context_menu(this, [{'contains': ['md5', 'hash'], 'value': '{{ result.md5|escapejs }}' }], 0, {{ container.id }}, null, false);">
             {{ result.md5 }}
             &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
           </a>
         </p>
-        {% if result.message %}
-          <p>
-            {% autoescape off %}
-              {{ result.message }}
-            {% endautoescape %}
-          </p>
-        {% endif %}
+        {% if result.message %}<p>{{ result.message }}</p>{% endif %}
         {% if result.data.file_details %}
           <p class="cb-subheader-style">
             <b>Original Filename:</b>
             <a href="javascript:;"
-               onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename }}' }], 0, {{ container.id }}, null, false);">
+               onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename|escapejs }}' }], 0, {{ container.id }}, null, false);">
               {{ result.data.file_details.original_filename }}
               &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
             </a>
@@ -122,7 +116,7 @@
               </td>
               <td>
                 <a href="javascript:;"
-                   onclick="context_menu(this, [{'contains': ['md5', 'hash'], 'value': '{{ result.md5 }}' }], 0, {{ container.id }}, null, false);">
+                   onclick="context_menu(this, [{'contains': ['md5', 'hash'], 'value': '{{ result.md5|escapejs }}' }], 0, {{ container.id }}, null, false);">
                   {{ result.md5 }}
                 &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
               </td>
@@ -134,7 +128,7 @@
                 </td>
                 <td>
                   <a href="javascript:;"
-                     onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id }}' }], 0, {{ container.id }}, null, false);">
+                     onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id|escapejs }}' }], 0, {{ container.id }}, null, false);">
                     {{ result.data.vault_id }}
                     &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
                   </a>
@@ -215,7 +209,7 @@
               </td>
               <td>
                 <a href="javascript:;"
-                   onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename }}' }], 0, {{ container.id }}, null, false);">
+                   onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename|escapejs }}' }], 0, {{ container.id }}, null, false);">
                   {{ result.data.file_details.original_filename }}
                 &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
               </td>
@@ -226,7 +220,7 @@
               </td>
               <td>
                 <a href="javascript:;"
-                   onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.internal_name }}' }], 0, {{ container.id }}, null, false);">
+                   onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.internal_name|escapejs }}' }], 0, {{ container.id }}, null, false);">
                   {{ result.data.file_details.internal_name }}
                 &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
               </td>
@@ -266,7 +260,7 @@
                 <tr>
                   <td>
                     <a href="javascript:;"
-                       onclick="context_menu(this, [{'contains': ['file path'], 'value': '{{ curr_path }}' }], 0, {{ container.id }}, null, false);">
+                       onclick="context_menu(this, [{'contains': ['file path'], 'value': '{{ curr_path|escapejs }}' }], 0, {{ container.id }}, null, false);">
                       {{ curr_path }}
                       &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
                     </a>
@@ -288,14 +282,14 @@
                 <tr>
                   <td>
                     <a href="javascript:;"
-                       onclick="context_menu(this, [{'contains': ['host name'], 'value': '{{ curr_endpoint.host }}' }], 0, {{ container.id }}, null, false);">
+                       onclick="context_menu(this, [{'contains': ['host name'], 'value': '{{ curr_endpoint.host|escapejs }}' }], 0, {{ container.id }}, null, false);">
                       {{ curr_endpoint.host }}
                       &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
                     </a>
                   </td>
                   <td>
                     <a href="javascript:;"
-                       onclick="context_menu(this, [{'contains': ['carbon black sensor id'], 'value': '{{ curr_endpoint.sensor }}' }], 0, {{ container.id }}, null, false);">
+                       onclick="context_menu(this, [{'contains': ['carbon black sensor id'], 'value': '{{ curr_endpoint.sensor|escapejs }}' }], 0, {{ container.id }}, null, false);">
                       {{ curr_endpoint.sensor }}
                       &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
                     </a>
@@ -329,7 +323,7 @@
             <th>Vault Id</th>
             <td>
               <a href="javascript:;"
-                 onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id }}' }], 0, {{ container.id }}, null, false);">
+                 onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id|escapejs }}' }], 0, {{ container.id }}, null, false);">
                 {{ result.data.vault_id }}
                 &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
               </td>
