@@ -215,6 +215,9 @@ class CarbonblackConnector(BaseConnector):
         if files is not None:
             del headers["Content-Type"]
 
+        if max_response_bytes is not None:
+            headers["Accept-Encoding"] = "identity"
+
         config = self.get_config()
 
         request_func = getattr(requests, method)
@@ -251,6 +254,11 @@ class CarbonblackConnector(BaseConnector):
             return (action_result.set_status(phantom.APP_ERROR, f"REST Api to server failed. {error_message}"), None)
 
         if max_response_bytes is not None:
+            content_encoding = r.headers.get("Content-Encoding", "identity").strip().casefold()
+            if content_encoding not in {"", "identity"}:
+                r.close()
+                return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
+
             content_length = r.headers.get("Content-Length")
             if content_length:
                 try:
@@ -261,10 +269,18 @@ class CarbonblackConnector(BaseConnector):
                     pass
 
             response_body = bytearray()
-            for chunk in r.iter_content(chunk_size=64 * 1024):
+            read_chunk = getattr(getattr(r, "raw", None), "read1", None)
+            if not callable(read_chunk):
+                r.close()
+                return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
+
+            while True:
                 if deadline is not None and time.monotonic() >= deadline:
                     r.close()
                     return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
+                chunk = read_chunk(64 * 1024, decode_content=False)
+                if not chunk:
+                    break
                 response_body.extend(chunk)
                 if len(response_body) > max_response_bytes:
                     r.close()

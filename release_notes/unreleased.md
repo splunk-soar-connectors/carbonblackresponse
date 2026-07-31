@@ -6,4 +6,5 @@
 * Require a unique sensor ID for IP-based containment to prevent stale adapter records from selecting an endpoint.
 * Stream alert responses through the remaining byte budget before JSON materialization.
 * Bound alert-page connection, read, and cumulative pagination time.
+* Read bounded alert bodies one network chunk at a time so cumulative deadlines remain observable.
 * Preserve the prior alert checkpoint whenever any row in a fetched batch fails to ingest.
