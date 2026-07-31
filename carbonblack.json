@@ -3887,7 +3887,7 @@
             "identifier": "quarantine_device",
             "read_only": false,
             "undo": "unquarantine device",
-            "verbose": "Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period. Carbon Black Response also supports partial matches for hostnames, e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i>. The action will return an <b>error</b> if multiple <b>online</b> endpoints match the input parameter.<br>This action requires administrative privileges to search for the given endpoints and set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.",
+            "verbose": "IP-based containment requires <b>sensor_id</b> so stale or self-reported adapter addresses cannot select a different endpoint. Hostname lookup requires an exact name and fails when multiple exact records exist.<br>This action requires administrative privileges to search for the given endpoint and set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.",
             "parameters": {
                 "ip_hostname": {
                     "description": "Hostname/IP of endpoint to quarantine",
@@ -3899,6 +3899,12 @@
                     ],
                     "primary": true,
                     "required": true
+                },
+                "sensor_id": {
+                    "description": "Unique Carbon Black sensor ID. Required when ip_hostname is an IP address",
+                    "data_type": "numeric",
+                    "order": 1,
+                    "required": false
                 }
             },
             "render": {
@@ -3930,6 +3936,12 @@
                     "example_values": [
                         "cb-lab"
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.sensor_id",
+                    "data_type": "numeric",
+                    "column_name": "Sensor ID",
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.data",
@@ -3972,7 +3984,7 @@
             "identifier": "unquarantine_device",
             "read_only": false,
             "undo": "quarantine device",
-            "verbose": "Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period. Carbon Black Response also supports partial matches for hostnames, e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i>. The action will return an <b>error</b> if multiple <b>online</b> endpoints match the input parameter.<br>This action requires administrative privileges to search for the given endpoints and re-set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.",
+            "verbose": "IP-based containment requires <b>sensor_id</b> so stale or self-reported adapter addresses cannot select a different endpoint. Hostname lookup requires an exact name and fails when multiple exact records exist.<br>This action requires administrative privileges to search for the given endpoint and re-set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.",
             "parameters": {
                 "ip_hostname": {
                     "description": "Hostname/IP of endpoint to unquarantine",
@@ -3984,6 +3996,12 @@
                     ],
                     "primary": true,
                     "required": true
+                },
+                "sensor_id": {
+                    "description": "Unique Carbon Black sensor ID. Required when ip_hostname is an IP address",
+                    "data_type": "numeric",
+                    "order": 1,
+                    "required": false
                 }
             },
             "render": {
@@ -4015,6 +4033,12 @@
                     "example_values": [
                         "cb-lab"
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.sensor_id",
+                    "data_type": "numeric",
+                    "column_name": "Sensor ID",
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.data",

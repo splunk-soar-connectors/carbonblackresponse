@@ -1368,7 +1368,7 @@ class CarbonblackConnector(BaseConnector):
 
         ip_hostname = param[phantom.APP_JSON_IP_HOSTNAME]
 
-        ret_val, response = self._set_isolate_state(ip_hostname, action_result, True)
+        ret_val, response = self._set_isolate_state(ip_hostname, action_result, True, param.get(CARBONBLACK_JSON_SENSOR_ID))
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
@@ -1383,7 +1383,7 @@ class CarbonblackConnector(BaseConnector):
 
         ip_hostname = param[phantom.APP_JSON_IP_HOSTNAME]
 
-        ret_val, response = self._set_isolate_state(ip_hostname, action_result, False)
+        ret_val, response = self._set_isolate_state(ip_hostname, action_result, False, param.get(CARBONBLACK_JSON_SENSOR_ID))
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
@@ -1393,20 +1393,39 @@ class CarbonblackConnector(BaseConnector):
 
         return action_result.set_status(phantom.APP_SUCCESS, "Endpoint release state confirmed")
 
-    def _set_isolate_state(self, ip_hostname, action_result, state=True):
-        if phantom.is_ip(ip_hostname):
+    def _set_isolate_state(self, ip_hostname, action_result, state=True, sensor_id=None):
+        if phantom.is_ip(ip_hostname) and sensor_id is None:
+            return (
+                action_result.set_status(phantom.APP_ERROR, "sensor_id is required when ip_hostname is an IP address"),
+                None,
+            )
+
+        if sensor_id is not None:
+            ret_val, sensor_id = self._validate_integer(action_result, sensor_id, CARBONBLACK_JSON_SENSOR_ID)
+            if phantom.is_fail(ret_val):
+                return (action_result.get_status(), None)
+            endpoint = f"/v1/sensor/{sensor_id}"
+            query_parameters = None
+        elif phantom.is_ip(ip_hostname):
             query_parameters = {"ip": ip_hostname}
+            endpoint = "/v1/sensor"
         else:
             query_parameters = {"hostname": ip_hostname}
+            endpoint = "/v1/sensor"
 
         # make a rest call to get the sensors
-        ret_val, sensors = self._make_rest_call("/v1/sensor", action_result, params=query_parameters, additional_succ_codes={204: []})
+        ret_val, sensors = self._make_rest_call(endpoint, action_result, params=query_parameters, additional_succ_codes={204: []})
 
         if phantom.is_fail(ret_val):
             return (action_result.get_status(), None)
 
         if not sensors:
             return (action_result.set_status(phantom.APP_ERROR, "Unable to find endpoint, sensor list was empty"), None)
+
+        if sensor_id is not None:
+            if not isinstance(sensors, dict) or str(sensors.get("id")) != str(sensor_id):
+                return (action_result.set_status(phantom.APP_ERROR, "Server returned an invalid sensor identity"), None)
+            sensors = [sensors]
 
         if phantom.is_ip(ip_hostname):
             sensors = [
