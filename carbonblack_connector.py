@@ -2125,8 +2125,6 @@ class CarbonblackConnector(BaseConnector):
         action_result = self.add_action_result(phantom.ActionResult(param))
         max_containers = None
 
-        checkpoint_time = datetime.datetime.now().strftime(DT_STR_FORMAT)
-
         if self.is_poll_now():
             # Manual poll
             max_containers = int(param.get(phantom.APP_JSON_CONTAINER_COUNT))
@@ -2146,38 +2144,48 @@ class CarbonblackConnector(BaseConnector):
         if result_list is None:
             return action_result.get_status()
 
+        successful_checkpoints = []
+        failed_alerts = []
         for result in result_list:
-            cef = {}
-            cont = {}
-            cont["name"] = "Unresolved CB_Response Alert: " + result["watchlist_name"]
-            cont["description"] = "Unresolved CB_Response Alerts"
-            cont["source_data_identifier"] = result["unique_id"]
+            alert_id = result.get("unique_id") if isinstance(result, dict) else None
+            try:
+                if not isinstance(result, dict):
+                    raise ValueError("alert is not an object")
+                created_time = result["created_time"]
+                parsed_created_time = datetime.datetime.fromisoformat(created_time.replace("Z", "+00:00"))
+                if parsed_created_time.tzinfo is None:
+                    parsed_created_time = parsed_created_time.replace(tzinfo=datetime.timezone.utc)
 
-            for key, value in result.items():
-                cef[key] = value
-                # Create List to contain artifacts
-                artList = []
-                # Create the artifact
-                art = {
-                    "label": "alert",
-                    "cef": cef,
+                cont = {
+                    "name": "Unresolved CB_Response Alert: " + result["watchlist_name"],
+                    "description": "Unresolved CB_Response Alerts",
+                    "source_data_identifier": result["unique_id"],
+                    "data": result,
+                    "artifacts": [{"label": "alert", "cef": dict(result)}],
                 }
-                # Append Artifact to List
-                artList.append(art)
-                cont["data"] = result
-                # Create "artifacts" field in Container
-                cont["artifacts"] = artList
+                status, msg, container_id_ = self.save_container(cont)
+                if phantom.is_fail(status):
+                    raise RuntimeError(msg)
+                successful_checkpoints.append((parsed_created_time, created_time))
+            except Exception as e:
+                failed_alerts.append(str(alert_id or "unknown"))
+                self.debug_print(f"Alert {alert_id or 'unknown'} was not ingested: {self._get_error_message_from_exception(e)}")
 
-            status, msg, container_id_ = self.save_container(cont)
-            if status == phantom.APP_ERROR:
-                self.debug_print(f"Failed to store: {msg}")
-                self.debug_print(f"stat/msg {status}/{msg}")
-                action_result.set_status(phantom.APP_ERROR, f"Container creation failed: {msg}")
-                return status
+        if not self.is_poll_now() and successful_checkpoints:
+            self._state["last_ingested_time"] = max(successful_checkpoints, key=lambda item: item[0])[1]
+            try:
+                self.save_state(self._state)
+            except Exception as e:
+                return action_result.set_status(
+                    phantom.APP_ERROR, f"Failed to persist alert checkpoint: {self._get_error_message_from_exception(e)}"
+                )
 
-        if not self.is_poll_now():
-            self._state["last_ingested_time"] = checkpoint_time
-            self.save_state(self._state)
+        if failed_alerts:
+            action_result.add_data({"failed_alert_ids": failed_alerts})
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"Failed to ingest {len(failed_alerts)} alert(s); later valid alerts were still processed",
+            )
 
         return action_result.set_status(phantom.APP_SUCCESS)
 
