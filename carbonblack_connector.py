@@ -86,6 +86,7 @@ class CarbonblackConnector(BaseConnector):
         self._api_token = None
         self._state_file_path = None
         self._state = {}
+        self._last_response_size = 0
 
     def finalize(self):
         self.save_state(self._state)
@@ -194,6 +195,7 @@ class CarbonblackConnector(BaseConnector):
         data=None,
         parse_response_json=True,
         additional_succ_codes={},
+        max_response_bytes=None,
     ):
         """treat_status_code is a way in which the caller tells the function, 'if you get a status code present in this dictionary,
         then treat this as a success and just return be this value'
@@ -221,11 +223,40 @@ class CarbonblackConnector(BaseConnector):
         if data is not None:
             data = json.dumps(data)
 
+        self._last_response_size = 0
         try:
-            r = request_func(url, headers=headers, params=params, files=files, data=data, verify=config[phantom.APP_JSON_VERIFY])
+            r = request_func(
+                url,
+                headers=headers,
+                params=params,
+                files=files,
+                data=data,
+                verify=config[phantom.APP_JSON_VERIFY],
+                stream=max_response_bytes is not None,
+            )
         except Exception as e:
             error_message = self._get_error_message_from_exception(e)
             return (action_result.set_status(phantom.APP_ERROR, f"REST Api to server failed. {error_message}"), None)
+
+        if max_response_bytes is not None:
+            content_length = r.headers.get("Content-Length")
+            if content_length:
+                try:
+                    if int(content_length) > max_response_bytes:
+                        r.close()
+                        return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
+                except ValueError:
+                    pass
+
+            response_body = bytearray()
+            for chunk in r.iter_content(chunk_size=64 * 1024):
+                response_body.extend(chunk)
+                if len(response_body) > max_response_bytes:
+                    r.close()
+                    return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
+            self._last_response_size = len(response_body)
+            r._content = bytes(response_body)
+            r._content_consumed = True
 
         # It's ok if r.text is None, dump that
         # action_result.add_debug_data({'r_text': r.text if r else 'r is None'})
@@ -2059,7 +2090,11 @@ class CarbonblackConnector(BaseConnector):
         response_bytes = 0
 
         # Make an API call first time for retrieving total records
-        ret_val, response = self._make_rest_call(f"{endpoint}&rows={min(100, result_limit)}", action_result)
+        ret_val, response = self._make_rest_call(
+            f"{endpoint}&rows={min(100, result_limit)}",
+            action_result,
+            max_response_bytes=MAX_PAGINATION_RESPONSE_BYTES,
+        )
 
         if phantom.is_fail(ret_val):
             self.debug_print(action_result.get_message())
@@ -2084,10 +2119,7 @@ class CarbonblackConnector(BaseConnector):
             action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
             return None
 
-        response_bytes += len(json.dumps(response, default=str).encode("utf-8"))
-        if response_bytes > MAX_PAGINATION_RESPONSE_BYTES:
-            action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
-            return None
+        response_bytes += self._last_response_size
 
         start = len(result)
         result_list.extend(result)
@@ -2103,7 +2135,11 @@ class CarbonblackConnector(BaseConnector):
             if remaining <= 0:
                 return result_list
             endpoint_temp = f"{endpoint}&start={start}&rows={min(100, remaining)}"
-            ret_val, response = self._make_rest_call(endpoint_temp, action_result)
+            ret_val, response = self._make_rest_call(
+                endpoint_temp,
+                action_result,
+                max_response_bytes=MAX_PAGINATION_RESPONSE_BYTES - response_bytes,
+            )
             if phantom.is_fail(ret_val):
                 self.debug_print(action_result.get_message())
                 self.set_status(phantom.APP_ERROR, action_result.get_message())
@@ -2119,10 +2155,7 @@ class CarbonblackConnector(BaseConnector):
                 action_result.set_status(phantom.APP_ERROR, "Carbon Black returned invalid pagination data")
                 return None
 
-            response_bytes += len(json.dumps(response, default=str).encode("utf-8"))
-            if response_bytes > MAX_PAGINATION_RESPONSE_BYTES:
-                action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
-                return None
+            response_bytes += self._last_response_size
 
             if not result:
                 action_result.set_status(phantom.APP_ERROR, "Carbon Black pagination ended before all claimed results were returned")
