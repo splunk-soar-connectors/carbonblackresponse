@@ -2223,7 +2223,7 @@ class CarbonblackConnector(BaseConnector):
                 failed_alerts.append(str(alert_id or "unknown"))
                 self.debug_print(f"Alert {alert_id or 'unknown'} was not ingested: {self._get_error_message_from_exception(e)}")
 
-        if not self.is_poll_now() and successful_checkpoints:
+        if not self.is_poll_now() and not failed_alerts and successful_checkpoints:
             self._state["last_ingested_time"] = max(successful_checkpoints, key=lambda item: item[0])[1]
             try:
                 self.save_state(self._state)
