@@ -2036,9 +2036,11 @@ class CarbonblackConnector(BaseConnector):
 
     def _paginator(self, endpoint, action_result, max_containers=None):
         result_list = list()
+        result_limit = min(int(max_containers), MAX_PAGINATION_RESULTS) if max_containers else MAX_PAGINATION_RESULTS
+        response_bytes = 0
 
         # Make an API call first time for retrieving total records
-        ret_val, response = self._make_rest_call(endpoint, action_result)
+        ret_val, response = self._make_rest_call(f"{endpoint}&rows={min(100, result_limit)}", action_result)
 
         if phantom.is_fail(ret_val):
             self.debug_print(action_result.get_message())
@@ -2046,6 +2048,8 @@ class CarbonblackConnector(BaseConnector):
             return None
 
         try:
+            if not isinstance(response, dict):
+                raise ValueError
             total_results = int(response["total_results"])
             result = response["results"]
             if total_results < 0 or not isinstance(result, list):
@@ -2054,7 +2058,18 @@ class CarbonblackConnector(BaseConnector):
             action_result.set_status(phantom.APP_ERROR, "Carbon Black returned invalid pagination metadata")
             return None
 
-        # start indicates records which helps to traverse the records
+        if not max_containers and total_results > result_limit:
+            action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            return None
+        if len(result) > result_limit:
+            action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            return None
+
+        response_bytes += len(json.dumps(response, default=str).encode("utf-8"))
+        if response_bytes > MAX_PAGINATION_RESPONSE_BYTES:
+            action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            return None
+
         start = len(result)
         result_list.extend(result)
         if max_containers and int(max_containers) <= len(result_list):
@@ -2065,25 +2080,41 @@ class CarbonblackConnector(BaseConnector):
             if page_count > MAX_PAGINATION_PAGES:
                 action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
                 return None
-            endpoint_temp = f"{endpoint}&start={start}"
+            remaining = result_limit - len(result_list)
+            if remaining <= 0:
+                return result_list
+            endpoint_temp = f"{endpoint}&start={start}&rows={min(100, remaining)}"
             ret_val, response = self._make_rest_call(endpoint_temp, action_result)
             if phantom.is_fail(ret_val):
                 self.debug_print(action_result.get_message())
                 self.set_status(phantom.APP_ERROR, action_result.get_message())
                 return None
 
-            result = response["results"]
-            result_list.extend(result)
+            try:
+                if not isinstance(response, dict) or int(response.get("total_results")) != total_results:
+                    raise ValueError
+                result = response["results"]
+                if not isinstance(result, list) or len(result) > remaining:
+                    raise ValueError
+            except (KeyError, TypeError, ValueError):
+                action_result.set_status(phantom.APP_ERROR, "Carbon Black returned invalid pagination data")
+                return None
 
-            # Will break the loop when total_records < max_containers in case of manual poll.
-            if len(result) == 0:
-                break
+            response_bytes += len(json.dumps(response, default=str).encode("utf-8"))
+            if response_bytes > MAX_PAGINATION_RESPONSE_BYTES:
+                action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
+                return None
+
+            if not result:
+                action_result.set_status(phantom.APP_ERROR, "Carbon Black pagination ended before all claimed results were returned")
+                return None
+            result_list.extend(result)
 
             if max_containers:
                 if int(max_containers) <= len(result_list):
                     return result_list[:max_containers]
 
-            start = start + len(result)
+            start += len(result)
 
         return result_list
 
