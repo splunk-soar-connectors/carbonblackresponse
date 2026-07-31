@@ -1373,12 +1373,10 @@ class CarbonblackConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        try:
-            action_result.update_summary({"status": "success"})
-        except:
-            pass
+        action_result.add_data(response)
+        action_result.update_summary(response)
 
-        return action_result.set_status(phantom.APP_SUCCESS, CARBONBLACK_SUCC_QUARANTINE)
+        return action_result.set_status(phantom.APP_SUCCESS, "Endpoint isolation state confirmed")
 
     def _unquarantine_device(self, param):
         action_result = self.add_action_result(ActionResult(param))
@@ -1390,12 +1388,10 @@ class CarbonblackConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        try:
-            action_result.update_summary({"status": "success"})
-        except:
-            pass
+        action_result.add_data(response)
+        action_result.update_summary(response)
 
-        return action_result.set_status(phantom.APP_SUCCESS, CARBONBLACK_SUCC_UNQUARANTINE)
+        return action_result.set_status(phantom.APP_SUCCESS, "Endpoint release state confirmed")
 
     def _set_isolate_state(self, ip_hostname, action_result, state=True):
         if phantom.is_ip(ip_hostname):
@@ -1422,19 +1418,16 @@ class CarbonblackConnector(BaseConnector):
             normalized_hostname = ip_hostname.rstrip(".").casefold()
             sensors = [sensor for sensor in sensors if str(sensor.get("computer_name", "")).rstrip(".").casefold() == normalized_hostname]
 
-        sensors = [x for x in sensors if x.get("status") == "Online"]
+        num_endpoints = len(sensors)
+        if num_endpoints > 1:
+            self._add_sensor_info_to_result(sensors, action_result)
+            return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_MULTI_ENDPOINTS.format(num_endpoints=num_endpoints)), None)
+
+        sensors = [sensor for sensor in sensors if sensor.get("status") == "Online"]
 
         if not sensors:
             return (action_result.set_status(phantom.APP_ERROR, "Unable to find an online endpoint, sensor list was empty"), None)
 
-        num_endpoints = len(sensors)
-
-        if num_endpoints > 1:
-            # add the sensors found in the action_result
-            self._add_sensor_info_to_result(sensors, action_result)
-            return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_MULTI_ENDPOINTS.format(num_endpoints=num_endpoints)), None)
-
-        # get the id, of the 1st one, that's what we will be working on
         data = sensors[0]
 
         if "id" not in data:
@@ -1464,16 +1457,36 @@ class CarbonblackConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return (action_result.get_status(), None)
 
-        ret_val, updated_sensor = self._make_rest_call(f"/v1/sensor/{endpoint_id}", action_result)
-        if phantom.is_fail(ret_val):
-            return (action_result.get_status(), None)
-        if bool(updated_sensor.get("network_isolation_enabled")) != state:
-            return (
-                action_result.set_status(phantom.APP_ERROR, "Endpoint isolation state was not confirmed by the server"),
-                None,
-            )
+        updated_sensor = None
+        for _ in range(MAX_POLL_TRIES):
+            ret_val, updated_sensor = self._make_rest_call(f"/v1/sensor/{endpoint_id}", action_result)
+            if phantom.is_fail(ret_val):
+                return (action_result.get_status(), None)
+            if not isinstance(updated_sensor, dict) or str(updated_sensor.get("id")) != str(endpoint_id):
+                return (action_result.set_status(phantom.APP_ERROR, "Server returned an invalid sensor confirmation"), None)
 
-        return (phantom.APP_SUCCESS, sensors)
+            applied_states = {}
+            for field in ("is_isolating", "is_isolated"):
+                if field in updated_sensor:
+                    if type(updated_sensor[field]) is not bool:
+                        return (action_result.set_status(phantom.APP_ERROR, "Server returned an invalid isolation state"), None)
+                    applied_states[field] = updated_sensor[field]
+            if not applied_states:
+                return (action_result.set_status(phantom.APP_ERROR, "Server did not return an applied isolation state"), None)
+
+            confirmed = any(applied_states.values()) if state else not any(applied_states.values())
+            if confirmed:
+                matched_identity = ip_hostname
+                confirmation = {
+                    "sensor_id": endpoint_id,
+                    "computer_name": updated_sensor.get("computer_name", data.get("computer_name")),
+                    "matched_identity": matched_identity,
+                    **applied_states,
+                }
+                return (phantom.APP_SUCCESS, confirmation)
+            time.sleep(CARBONBLACK_SLEEP_SECS)
+
+        return (action_result.set_status(phantom.APP_ERROR, "Endpoint isolation state was not confirmed before timeout"), None)
 
     def _unblock_hash(self, param):
         action_result = self.add_action_result(ActionResult(param))
