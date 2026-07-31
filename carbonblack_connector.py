@@ -14,15 +14,18 @@
 # and limitations under the License.
 #
 #
+import contextlib
 import ctypes
 import datetime
 import json
 import os
 import re
 import shutil
+import signal
 import socket
 import struct
 import sys
+import threading
 import time
 import uuid
 import zipfile
@@ -39,6 +42,10 @@ from phantom.base_connector import BaseConnector
 from phantom.vault import Vault
 
 from carbonblack_consts import *
+
+
+class PaginationLimitError(Exception):
+    pass
 
 
 class CarbonblackConnector(BaseConnector):
@@ -184,6 +191,70 @@ class CarbonblackConnector(BaseConnector):
             self.debug_print(f"Handled exception: {error_message}")
             return "Unparsable Reply. Please see the log files for the response text."
 
+    @staticmethod
+    @contextlib.contextmanager
+    def _wallclock_deadline(deadline):
+        if deadline is None:
+            yield
+            return
+
+        if not hasattr(signal, "setitimer") or threading.current_thread() is not threading.main_thread():
+            raise PaginationLimitError("A wall-clock request deadline cannot be enforced in this worker")
+
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+        started_at = time.monotonic()
+
+        def _raise_timeout(_signum, _frame):
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        signal.signal(signal.SIGALRM, _raise_timeout)
+        signal.setitimer(signal.ITIMER_REAL, remaining_seconds)
+        try:
+            yield
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous_handler)
+            if previous_timer[0] > 0:
+                elapsed = time.monotonic() - started_at
+                signal.setitimer(signal.ITIMER_REAL, max(previous_timer[0] - elapsed, 1e-6), previous_timer[1])
+
+    def _read_bounded_response(self, response, max_response_bytes, deadline):
+        content_encoding = response.headers.get("Content-Encoding", "identity").strip().casefold()
+        if content_encoding not in {"", "identity"}:
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        content_length = response.headers.get("Content-Length")
+        if content_length:
+            try:
+                if int(content_length) > max_response_bytes:
+                    raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            except ValueError as e:
+                self.debug_print(f"Ignoring invalid Content-Length header: {e}")
+
+        read_chunk = getattr(getattr(response, "raw", None), "read1", None)
+        if not callable(read_chunk):
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        response_body = bytearray()
+        while True:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            chunk = read_chunk(64 * 1024, decode_content=False)
+            if not chunk:
+                break
+            response_body.extend(chunk)
+            if len(response_body) > max_response_bytes:
+                raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        self._last_response_size = len(response_body)
+        response._content = bytes(response_body)
+        response._content_consumed = True
+
     def _make_rest_call(
         self,
         endpoint,
@@ -239,55 +310,28 @@ class CarbonblackConnector(BaseConnector):
 
         self._last_response_size = 0
         try:
-            r = request_func(
-                url,
-                headers=headers,
-                params=params,
-                files=files,
-                data=data,
-                verify=config[phantom.APP_JSON_VERIFY],
-                stream=max_response_bytes is not None,
-                timeout=timeout,
-            )
+            with self._wallclock_deadline(deadline):
+                r = request_func(
+                    url,
+                    headers=headers,
+                    params=params,
+                    files=files,
+                    data=data,
+                    verify=config[phantom.APP_JSON_VERIFY],
+                    stream=max_response_bytes is not None,
+                    timeout=timeout,
+                )
+                if max_response_bytes is not None:
+                    try:
+                        self._read_bounded_response(r, max_response_bytes, deadline)
+                    except Exception:
+                        r.close()
+                        raise
+        except PaginationLimitError:
+            return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
         except Exception as e:
             error_message = self._get_error_message_from_exception(e)
             return (action_result.set_status(phantom.APP_ERROR, f"REST Api to server failed. {error_message}"), None)
-
-        if max_response_bytes is not None:
-            content_encoding = r.headers.get("Content-Encoding", "identity").strip().casefold()
-            if content_encoding not in {"", "identity"}:
-                r.close()
-                return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
-
-            content_length = r.headers.get("Content-Length")
-            if content_length:
-                try:
-                    if int(content_length) > max_response_bytes:
-                        r.close()
-                        return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
-                except ValueError:
-                    pass
-
-            response_body = bytearray()
-            read_chunk = getattr(getattr(r, "raw", None), "read1", None)
-            if not callable(read_chunk):
-                r.close()
-                return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
-
-            while True:
-                if deadline is not None and time.monotonic() >= deadline:
-                    r.close()
-                    return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
-                chunk = read_chunk(64 * 1024, decode_content=False)
-                if not chunk:
-                    break
-                response_body.extend(chunk)
-                if len(response_body) > max_response_bytes:
-                    r.close()
-                    return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
-            self._last_response_size = len(response_body)
-            r._content = bytes(response_body)
-            r._content_consumed = True
 
         # It's ok if r.text is None, dump that
         # action_result.add_debug_data({'r_text': r.text if r else 'r is None'})

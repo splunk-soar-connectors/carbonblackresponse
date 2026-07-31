@@ -7,4 +7,5 @@
 * Stream alert responses through the remaining byte budget before JSON materialization.
 * Bound alert-page connection, read, and cumulative pagination time.
 * Read bounded alert bodies one network chunk at a time so cumulative deadlines remain observable.
+* Enforce the same wall-clock deadline while alert response status and headers are received.
 * Preserve the prior alert checkpoint whenever any row in a fetched batch fails to ingest.
