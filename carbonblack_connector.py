@@ -196,6 +196,8 @@ class CarbonblackConnector(BaseConnector):
         parse_response_json=True,
         additional_succ_codes={},
         max_response_bytes=None,
+        timeout=None,
+        deadline=None,
     ):
         """treat_status_code is a way in which the caller tells the function, 'if you get a status code present in this dictionary,
         then treat this as a success and just return be this value'
@@ -223,6 +225,15 @@ class CarbonblackConnector(BaseConnector):
         if data is not None:
             data = json.dumps(data)
 
+        if deadline is not None:
+            remaining_seconds = deadline - time.monotonic()
+            if remaining_seconds <= 0:
+                return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
+            timeout = (
+                min(PAGINATION_CONNECT_TIMEOUT_SECONDS, remaining_seconds),
+                min(PAGINATION_READ_TIMEOUT_SECONDS, remaining_seconds),
+            )
+
         self._last_response_size = 0
         try:
             r = request_func(
@@ -233,6 +244,7 @@ class CarbonblackConnector(BaseConnector):
                 data=data,
                 verify=config[phantom.APP_JSON_VERIFY],
                 stream=max_response_bytes is not None,
+                timeout=timeout,
             )
         except Exception as e:
             error_message = self._get_error_message_from_exception(e)
@@ -250,6 +262,9 @@ class CarbonblackConnector(BaseConnector):
 
             response_body = bytearray()
             for chunk in r.iter_content(chunk_size=64 * 1024):
+                if deadline is not None and time.monotonic() >= deadline:
+                    r.close()
+                    return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
                 response_body.extend(chunk)
                 if len(response_body) > max_response_bytes:
                     r.close()
@@ -2088,12 +2103,14 @@ class CarbonblackConnector(BaseConnector):
         result_list = list()
         result_limit = min(int(max_containers), MAX_PAGINATION_RESULTS) if max_containers else MAX_PAGINATION_RESULTS
         response_bytes = 0
+        deadline = time.monotonic() + PAGINATION_DEADLINE_SECONDS
 
         # Make an API call first time for retrieving total records
         ret_val, response = self._make_rest_call(
             f"{endpoint}&rows={min(100, result_limit)}",
             action_result,
             max_response_bytes=MAX_PAGINATION_RESPONSE_BYTES,
+            deadline=deadline,
         )
 
         if phantom.is_fail(ret_val):
@@ -2139,6 +2156,7 @@ class CarbonblackConnector(BaseConnector):
                 endpoint_temp,
                 action_result,
                 max_response_bytes=MAX_PAGINATION_RESPONSE_BYTES - response_bytes,
+                deadline=deadline,
             )
             if phantom.is_fail(ret_val):
                 self.debug_print(action_result.get_message())
