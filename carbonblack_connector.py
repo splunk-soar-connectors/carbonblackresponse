@@ -14,15 +14,18 @@
 # and limitations under the License.
 #
 #
+import contextlib
 import ctypes
 import datetime
 import json
 import os
 import re
 import shutil
+import signal
 import socket
 import struct
 import sys
+import threading
 import time
 import uuid
 import zipfile
@@ -39,6 +42,10 @@ from phantom.base_connector import BaseConnector
 from phantom.vault import Vault
 
 from carbonblack_consts import *
+
+
+class PaginationLimitError(Exception):
+    pass
 
 
 class CarbonblackConnector(BaseConnector):
@@ -86,6 +93,7 @@ class CarbonblackConnector(BaseConnector):
         self._api_token = None
         self._state_file_path = None
         self._state = {}
+        self._last_response_size = 0
 
     def finalize(self):
         self.save_state(self._state)
@@ -183,6 +191,70 @@ class CarbonblackConnector(BaseConnector):
             self.debug_print(f"Handled exception: {error_message}")
             return "Unparsable Reply. Please see the log files for the response text."
 
+    @staticmethod
+    @contextlib.contextmanager
+    def _wallclock_deadline(deadline):
+        if deadline is None:
+            yield
+            return
+
+        if not hasattr(signal, "setitimer") or threading.current_thread() is not threading.main_thread():
+            raise PaginationLimitError("A wall-clock request deadline cannot be enforced in this worker")
+
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+        started_at = time.monotonic()
+
+        def _raise_timeout(_signum, _frame):
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        signal.signal(signal.SIGALRM, _raise_timeout)
+        signal.setitimer(signal.ITIMER_REAL, remaining_seconds)
+        try:
+            yield
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous_handler)
+            if previous_timer[0] > 0:
+                elapsed = time.monotonic() - started_at
+                signal.setitimer(signal.ITIMER_REAL, max(previous_timer[0] - elapsed, 1e-6), previous_timer[1])
+
+    def _read_bounded_response(self, response, max_response_bytes, deadline):
+        content_encoding = response.headers.get("Content-Encoding", "identity").strip().casefold()
+        if content_encoding not in {"", "identity"}:
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        content_length = response.headers.get("Content-Length")
+        if content_length:
+            try:
+                if int(content_length) > max_response_bytes:
+                    raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            except ValueError as e:
+                self.debug_print(f"Ignoring invalid Content-Length header: {e}")
+
+        read_chunk = getattr(getattr(response, "raw", None), "read1", None)
+        if not callable(read_chunk):
+            raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        response_body = bytearray()
+        while True:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            chunk = read_chunk(64 * 1024, decode_content=False)
+            if not chunk:
+                break
+            response_body.extend(chunk)
+            if len(response_body) > max_response_bytes:
+                raise PaginationLimitError(CARBONBLACK_ERROR_PAGINATION_LIMIT)
+
+        self._last_response_size = len(response_body)
+        response._content = bytes(response_body)
+        response._content_consumed = True
+
     def _make_rest_call(
         self,
         endpoint,
@@ -194,6 +266,9 @@ class CarbonblackConnector(BaseConnector):
         data=None,
         parse_response_json=True,
         additional_succ_codes={},
+        max_response_bytes=None,
+        timeout=None,
+        deadline=None,
     ):
         """treat_status_code is a way in which the caller tells the function, 'if you get a status code present in this dictionary,
         then treat this as a success and just return be this value'
@@ -211,6 +286,9 @@ class CarbonblackConnector(BaseConnector):
         if files is not None:
             del headers["Content-Type"]
 
+        if max_response_bytes is not None:
+            headers["Accept-Encoding"] = "identity"
+
         config = self.get_config()
 
         request_func = getattr(requests, method)
@@ -221,8 +299,36 @@ class CarbonblackConnector(BaseConnector):
         if data is not None:
             data = json.dumps(data)
 
+        if deadline is not None:
+            remaining_seconds = deadline - time.monotonic()
+            if remaining_seconds <= 0:
+                return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
+            timeout = (
+                min(PAGINATION_CONNECT_TIMEOUT_SECONDS, remaining_seconds),
+                min(PAGINATION_READ_TIMEOUT_SECONDS, remaining_seconds),
+            )
+
+        self._last_response_size = 0
         try:
-            r = request_func(url, headers=headers, params=params, files=files, data=data, verify=config[phantom.APP_JSON_VERIFY])
+            with self._wallclock_deadline(deadline):
+                r = request_func(
+                    url,
+                    headers=headers,
+                    params=params,
+                    files=files,
+                    data=data,
+                    verify=config[phantom.APP_JSON_VERIFY],
+                    stream=max_response_bytes is not None,
+                    timeout=timeout,
+                )
+                if max_response_bytes is not None:
+                    try:
+                        self._read_bounded_response(r, max_response_bytes, deadline)
+                    except Exception:
+                        r.close()
+                        raise
+        except PaginationLimitError:
+            return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT), None)
         except Exception as e:
             error_message = self._get_error_message_from_exception(e)
             return (action_result.set_status(phantom.APP_ERROR, f"REST Api to server failed. {error_message}"), None)
@@ -1368,49 +1474,64 @@ class CarbonblackConnector(BaseConnector):
 
         ip_hostname = param[phantom.APP_JSON_IP_HOSTNAME]
 
-        ret_val, response = self._set_isolate_state(ip_hostname, action_result, True)
+        ret_val, response = self._set_isolate_state(ip_hostname, action_result, True, param.get(CARBONBLACK_JSON_SENSOR_ID))
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        try:
-            action_result.update_summary({"status": "success"})
-        except:
-            pass
+        action_result.add_data(response)
+        action_result.update_summary(response)
 
-        return action_result.set_status(phantom.APP_SUCCESS, CARBONBLACK_SUCC_QUARANTINE)
+        return action_result.set_status(phantom.APP_SUCCESS, "Endpoint isolation state confirmed")
 
     def _unquarantine_device(self, param):
         action_result = self.add_action_result(ActionResult(param))
 
         ip_hostname = param[phantom.APP_JSON_IP_HOSTNAME]
 
-        ret_val, response = self._set_isolate_state(ip_hostname, action_result, False)
+        ret_val, response = self._set_isolate_state(ip_hostname, action_result, False, param.get(CARBONBLACK_JSON_SENSOR_ID))
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        try:
-            action_result.update_summary({"status": "success"})
-        except:
-            pass
+        action_result.add_data(response)
+        action_result.update_summary(response)
 
-        return action_result.set_status(phantom.APP_SUCCESS, CARBONBLACK_SUCC_UNQUARANTINE)
+        return action_result.set_status(phantom.APP_SUCCESS, "Endpoint release state confirmed")
 
-    def _set_isolate_state(self, ip_hostname, action_result, state=True):
-        if phantom.is_ip(ip_hostname):
+    def _set_isolate_state(self, ip_hostname, action_result, state=True, sensor_id=None):
+        if phantom.is_ip(ip_hostname) and sensor_id is None:
+            return (
+                action_result.set_status(phantom.APP_ERROR, "sensor_id is required when ip_hostname is an IP address"),
+                None,
+            )
+
+        if sensor_id is not None:
+            ret_val, sensor_id = self._validate_integer(action_result, sensor_id, CARBONBLACK_JSON_SENSOR_ID)
+            if phantom.is_fail(ret_val):
+                return (action_result.get_status(), None)
+            endpoint = f"/v1/sensor/{sensor_id}"
+            query_parameters = None
+        elif phantom.is_ip(ip_hostname):
             query_parameters = {"ip": ip_hostname}
+            endpoint = "/v1/sensor"
         else:
             query_parameters = {"hostname": ip_hostname}
+            endpoint = "/v1/sensor"
 
         # make a rest call to get the sensors
-        ret_val, sensors = self._make_rest_call("/v1/sensor", action_result, params=query_parameters, additional_succ_codes={204: []})
+        ret_val, sensors = self._make_rest_call(endpoint, action_result, params=query_parameters, additional_succ_codes={204: []})
 
         if phantom.is_fail(ret_val):
             return (action_result.get_status(), None)
 
         if not sensors:
             return (action_result.set_status(phantom.APP_ERROR, "Unable to find endpoint, sensor list was empty"), None)
+
+        if sensor_id is not None:
+            if not isinstance(sensors, dict) or str(sensors.get("id")) != str(sensor_id):
+                return (action_result.set_status(phantom.APP_ERROR, "Server returned an invalid sensor identity"), None)
+            sensors = [sensors]
 
         if phantom.is_ip(ip_hostname):
             sensors = [
@@ -1422,19 +1543,16 @@ class CarbonblackConnector(BaseConnector):
             normalized_hostname = ip_hostname.rstrip(".").casefold()
             sensors = [sensor for sensor in sensors if str(sensor.get("computer_name", "")).rstrip(".").casefold() == normalized_hostname]
 
-        sensors = [x for x in sensors if x.get("status") == "Online"]
+        num_endpoints = len(sensors)
+        if num_endpoints > 1:
+            self._add_sensor_info_to_result(sensors, action_result)
+            return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_MULTI_ENDPOINTS.format(num_endpoints=num_endpoints)), None)
+
+        sensors = [sensor for sensor in sensors if sensor.get("status") == "Online"]
 
         if not sensors:
             return (action_result.set_status(phantom.APP_ERROR, "Unable to find an online endpoint, sensor list was empty"), None)
 
-        num_endpoints = len(sensors)
-
-        if num_endpoints > 1:
-            # add the sensors found in the action_result
-            self._add_sensor_info_to_result(sensors, action_result)
-            return (action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_MULTI_ENDPOINTS.format(num_endpoints=num_endpoints)), None)
-
-        # get the id, of the 1st one, that's what we will be working on
         data = sensors[0]
 
         if "id" not in data:
@@ -1464,16 +1582,36 @@ class CarbonblackConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return (action_result.get_status(), None)
 
-        ret_val, updated_sensor = self._make_rest_call(f"/v1/sensor/{endpoint_id}", action_result)
-        if phantom.is_fail(ret_val):
-            return (action_result.get_status(), None)
-        if bool(updated_sensor.get("network_isolation_enabled")) != state:
-            return (
-                action_result.set_status(phantom.APP_ERROR, "Endpoint isolation state was not confirmed by the server"),
-                None,
-            )
+        updated_sensor = None
+        for _ in range(MAX_POLL_TRIES):
+            ret_val, updated_sensor = self._make_rest_call(f"/v1/sensor/{endpoint_id}", action_result)
+            if phantom.is_fail(ret_val):
+                return (action_result.get_status(), None)
+            if not isinstance(updated_sensor, dict) or str(updated_sensor.get("id")) != str(endpoint_id):
+                return (action_result.set_status(phantom.APP_ERROR, "Server returned an invalid sensor confirmation"), None)
 
-        return (phantom.APP_SUCCESS, sensors)
+            applied_states = {}
+            for field in ("is_isolating", "is_isolated"):
+                if field in updated_sensor:
+                    if type(updated_sensor[field]) is not bool:
+                        return (action_result.set_status(phantom.APP_ERROR, "Server returned an invalid isolation state"), None)
+                    applied_states[field] = updated_sensor[field]
+            if not applied_states:
+                return (action_result.set_status(phantom.APP_ERROR, "Server did not return an applied isolation state"), None)
+
+            confirmed = any(applied_states.values()) if state else not any(applied_states.values())
+            if confirmed:
+                matched_identity = ip_hostname
+                confirmation = {
+                    "sensor_id": endpoint_id,
+                    "computer_name": updated_sensor.get("computer_name", data.get("computer_name")),
+                    "matched_identity": matched_identity,
+                    **applied_states,
+                }
+                return (phantom.APP_SUCCESS, confirmation)
+            time.sleep(CARBONBLACK_SLEEP_SECS)
+
+        return (action_result.set_status(phantom.APP_ERROR, "Endpoint isolation state was not confirmed before timeout"), None)
 
     def _unblock_hash(self, param):
         action_result = self.add_action_result(ActionResult(param))
@@ -2023,9 +2161,17 @@ class CarbonblackConnector(BaseConnector):
 
     def _paginator(self, endpoint, action_result, max_containers=None):
         result_list = list()
+        result_limit = min(int(max_containers), MAX_PAGINATION_RESULTS) if max_containers else MAX_PAGINATION_RESULTS
+        response_bytes = 0
+        deadline = time.monotonic() + PAGINATION_DEADLINE_SECONDS
 
         # Make an API call first time for retrieving total records
-        ret_val, response = self._make_rest_call(endpoint, action_result)
+        ret_val, response = self._make_rest_call(
+            f"{endpoint}&rows={min(100, result_limit)}",
+            action_result,
+            max_response_bytes=MAX_PAGINATION_RESPONSE_BYTES,
+            deadline=deadline,
+        )
 
         if phantom.is_fail(ret_val):
             self.debug_print(action_result.get_message())
@@ -2033,6 +2179,8 @@ class CarbonblackConnector(BaseConnector):
             return None
 
         try:
+            if not isinstance(response, dict):
+                raise ValueError
             total_results = int(response["total_results"])
             result = response["results"]
             if total_results < 0 or not isinstance(result, list):
@@ -2041,7 +2189,15 @@ class CarbonblackConnector(BaseConnector):
             action_result.set_status(phantom.APP_ERROR, "Carbon Black returned invalid pagination metadata")
             return None
 
-        # start indicates records which helps to traverse the records
+        if not max_containers and total_results > result_limit:
+            action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            return None
+        if len(result) > result_limit:
+            action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
+            return None
+
+        response_bytes += self._last_response_size
+
         start = len(result)
         result_list.extend(result)
         if max_containers and int(max_containers) <= len(result_list):
@@ -2052,25 +2208,43 @@ class CarbonblackConnector(BaseConnector):
             if page_count > MAX_PAGINATION_PAGES:
                 action_result.set_status(phantom.APP_ERROR, CARBONBLACK_ERROR_PAGINATION_LIMIT)
                 return None
-            endpoint_temp = f"{endpoint}&start={start}"
-            ret_val, response = self._make_rest_call(endpoint_temp, action_result)
+            remaining = result_limit - len(result_list)
+            if remaining <= 0:
+                return result_list
+            endpoint_temp = f"{endpoint}&start={start}&rows={min(100, remaining)}"
+            ret_val, response = self._make_rest_call(
+                endpoint_temp,
+                action_result,
+                max_response_bytes=MAX_PAGINATION_RESPONSE_BYTES - response_bytes,
+                deadline=deadline,
+            )
             if phantom.is_fail(ret_val):
                 self.debug_print(action_result.get_message())
                 self.set_status(phantom.APP_ERROR, action_result.get_message())
                 return None
 
-            result = response["results"]
-            result_list.extend(result)
+            try:
+                if not isinstance(response, dict) or int(response.get("total_results")) != total_results:
+                    raise ValueError
+                result = response["results"]
+                if not isinstance(result, list) or len(result) > remaining:
+                    raise ValueError
+            except (KeyError, TypeError, ValueError):
+                action_result.set_status(phantom.APP_ERROR, "Carbon Black returned invalid pagination data")
+                return None
 
-            # Will break the loop when total_records < max_containers in case of manual poll.
-            if len(result) == 0:
-                break
+            response_bytes += self._last_response_size
+
+            if not result:
+                action_result.set_status(phantom.APP_ERROR, "Carbon Black pagination ended before all claimed results were returned")
+                return None
+            result_list.extend(result)
 
             if max_containers:
                 if int(max_containers) <= len(result_list):
                     return result_list[:max_containers]
 
-            start = start + len(result)
+            start += len(result)
 
         return result_list
 
@@ -2080,8 +2254,6 @@ class CarbonblackConnector(BaseConnector):
         # Add action result
         action_result = self.add_action_result(phantom.ActionResult(param))
         max_containers = None
-
-        checkpoint_time = datetime.datetime.now().strftime(DT_STR_FORMAT)
 
         if self.is_poll_now():
             # Manual poll
@@ -2102,38 +2274,48 @@ class CarbonblackConnector(BaseConnector):
         if result_list is None:
             return action_result.get_status()
 
+        successful_checkpoints = []
+        failed_alerts = []
         for result in result_list:
-            cef = {}
-            cont = {}
-            cont["name"] = "Unresolved CB_Response Alert: " + result["watchlist_name"]
-            cont["description"] = "Unresolved CB_Response Alerts"
-            cont["source_data_identifier"] = result["unique_id"]
+            alert_id = result.get("unique_id") if isinstance(result, dict) else None
+            try:
+                if not isinstance(result, dict):
+                    raise ValueError("alert is not an object")
+                created_time = result["created_time"]
+                parsed_created_time = datetime.datetime.fromisoformat(created_time.replace("Z", "+00:00"))
+                if parsed_created_time.tzinfo is None:
+                    parsed_created_time = parsed_created_time.replace(tzinfo=datetime.timezone.utc)
 
-            for key, value in result.items():
-                cef[key] = value
-                # Create List to contain artifacts
-                artList = []
-                # Create the artifact
-                art = {
-                    "label": "alert",
-                    "cef": cef,
+                cont = {
+                    "name": "Unresolved CB_Response Alert: " + result["watchlist_name"],
+                    "description": "Unresolved CB_Response Alerts",
+                    "source_data_identifier": result["unique_id"],
+                    "data": result,
+                    "artifacts": [{"label": "alert", "cef": dict(result)}],
                 }
-                # Append Artifact to List
-                artList.append(art)
-                cont["data"] = result
-                # Create "artifacts" field in Container
-                cont["artifacts"] = artList
+                status, msg, container_id_ = self.save_container(cont)
+                if phantom.is_fail(status):
+                    raise RuntimeError(msg)
+                successful_checkpoints.append((parsed_created_time, created_time))
+            except Exception as e:
+                failed_alerts.append(str(alert_id or "unknown"))
+                self.debug_print(f"Alert {alert_id or 'unknown'} was not ingested: {self._get_error_message_from_exception(e)}")
 
-            status, msg, container_id_ = self.save_container(cont)
-            if status == phantom.APP_ERROR:
-                self.debug_print(f"Failed to store: {msg}")
-                self.debug_print(f"stat/msg {status}/{msg}")
-                action_result.set_status(phantom.APP_ERROR, f"Container creation failed: {msg}")
-                return status
+        if not self.is_poll_now() and not failed_alerts and successful_checkpoints:
+            self._state["last_ingested_time"] = max(successful_checkpoints, key=lambda item: item[0])[1]
+            try:
+                self.save_state(self._state)
+            except Exception as e:
+                return action_result.set_status(
+                    phantom.APP_ERROR, f"Failed to persist alert checkpoint: {self._get_error_message_from_exception(e)}"
+                )
 
-        if not self.is_poll_now():
-            self._state["last_ingested_time"] = checkpoint_time
-            self.save_state(self._state)
+        if failed_alerts:
+            action_result.add_data({"failed_alert_ids": failed_alerts})
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"Failed to ingest {len(failed_alerts)} alert(s); later valid alerts were still processed",
+            )
 
         return action_result.set_status(phantom.APP_SUCCESS)
 

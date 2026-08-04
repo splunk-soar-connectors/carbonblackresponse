@@ -4,7 +4,7 @@ Publisher: Splunk <br>
 Connector Version: 2.3.7 <br>
 Product Vendor: Bit9 <br>
 Product Name: Carbon Black <br>
-Minimum Product Version: 5.5.0
+Minimum Product Version: 6.3.0
 
 This app supports executing various endpoint-based investigative and containment actions on Carbon Black Response
 
@@ -657,13 +657,14 @@ Quarantine the endpoint
 Type: **contain** <br>
 Read only: **False**
 
-Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period. Carbon Black Response also supports partial matches for hostnames, e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i>. The action will return an <b>error</b> if multiple <b>online</b> endpoints match the input parameter.<br>This action requires administrative privileges to search for the given endpoints and set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
+IP-based containment requires <b>sensor_id</b> so stale or self-reported adapter addresses cannot select a different endpoint. Hostname lookup requires an exact name and fails when multiple exact records exist.<br>This action requires administrative privileges to search for the given endpoint and set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
 
 #### Action Parameters
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **ip_hostname** | required | Hostname/IP of endpoint to quarantine | string | `host name` `ip` |
+**sensor_id** | optional | Unique Carbon Black sensor ID. Required when ip_hostname is an IP address | numeric | |
 
 #### Action Output
 
@@ -671,6 +672,7 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failed |
 action_result.parameter.ip_hostname | string | `host name` `ip` | cb-lab |
+action_result.parameter.sensor_id | numeric | | |
 action_result.data | string | | |
 action_result.summary | string | | |
 action_result.message | string | | Quarantine action succeeded. It might take some time for endpoint to get isolated. |
@@ -684,13 +686,14 @@ Unquarantine the endpoint
 Type: **correct** <br>
 Read only: **False**
 
-Carbon Black Response can have multiple entries that match an ip address, even a hostname. This could happen if a machine was removed and re-added to Carbon Black Response after an extended period. Carbon Black Response also supports partial matches for hostnames, e.g. if <b>ip_hostname</b> is specified as <i>WIN</i> then this will match endpoints with hostname <i>WINXP</i> and <i>WIN8</i>. The action will return an <b>error</b> if multiple <b>online</b> endpoints match the input parameter.<br>This action requires administrative privileges to search for the given endpoints and re-set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
+IP-based containment requires <b>sensor_id</b> so stale or self-reported adapter addresses cannot select a different endpoint. Hostname lookup requires an exact name and fails when multiple exact records exist.<br>This action requires administrative privileges to search for the given endpoint and re-set the quarantine/isolation state. If this privilege is not assigned to the asset <b>api_token</b>, the action may return an empty list or <b>HTTP 405 Method Not Allowed</b> error.
 
 #### Action Parameters
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **ip_hostname** | required | Hostname/IP of endpoint to unquarantine | string | `host name` `ip` |
+**sensor_id** | optional | Unique Carbon Black sensor ID. Required when ip_hostname is an IP address | numeric | |
 
 #### Action Output
 
@@ -698,6 +701,7 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failed |
 action_result.parameter.ip_hostname | string | `host name` `ip` | cb-lab |
+action_result.parameter.sensor_id | numeric | | |
 action_result.data | string | | |
 action_result.summary | string | | |
 action_result.message | string | | Unquarantine action succeeded. It might take some time for endpoint to take effect. |
