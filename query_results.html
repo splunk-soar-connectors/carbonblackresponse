@@ -1,4 +1,4 @@
-{% extends 'widgets/widget_template.html' %}
+{% extends "widgets/widget_template.html" %}
 {% load custom_template %}
 {% block custom_title_prop %}
   {% if title_logo %}
@@ -57,7 +57,7 @@
                         &nbsp;<span class="fa fa-caret-down"></span>
                       </a>
                     {% else %}
-                      {% if forloop.counter0 in allow_links and cell.value|startswith:'http' %}
+                      {% if forloop.counter0 in allow_links and cell.value|startswith:"http" %}
                         <a href="{{ cell.value }}" target="_blank">{{ cell.value }}</a>
                       {% else %}
                         {{ cell.value }}
