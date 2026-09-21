@@ -1373,7 +1373,7 @@ class CarbonblackConnector(BaseConnector):
         else:
             self.debug_print(CARBONBLACK_GROUP_ID_MSG)
 
-        ret_val, body = self._make_rest_call(
+        ret_val, _body = self._make_rest_call(
             f"/v1/sensor/{sensor_id}", action_result, data=updated_sensor, method="put", additional_succ_codes={204: []}
         )
 
@@ -1569,7 +1569,7 @@ class CarbonblackConnector(BaseConnector):
             self.debug_print(CARBONBLACK_GROUP_ID_MSG)
 
         # make a rest call to set the endpoint state
-        ret_val, response = self._make_rest_call(
+        ret_val, _response = self._make_rest_call(
             f"/v1/sensor/{endpoint_id}",
             action_result,
             method="put",
@@ -2293,7 +2293,7 @@ class CarbonblackConnector(BaseConnector):
                     "data": result,
                     "artifacts": [{"label": "alert", "cef": dict(result)}],
                 }
-                status, msg, container_id_ = self.save_container(cont)
+                status, msg, _container_id = self.save_container(cont)
                 if phantom.is_fail(status):
                     raise RuntimeError(msg)
                 successful_checkpoints.append((parsed_created_time, created_time))

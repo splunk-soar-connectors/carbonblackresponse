@@ -1,4 +1,4 @@
-{% extends 'widgets/widget_template.html' %}
+{% extends "widgets/widget_template.html" %}
 {% load custom_template %}
 {% block custom_title_prop %}
   {% if title_logo %}
@@ -89,250 +89,250 @@
             {{ result.md5 }}
             &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
           </a>
-        </p>
-        {% if result.message %}<p>{{ result.message }}</p>{% endif %}
-        {% if result.data.file_details %}
-          <p class="cb-subheader-style">
-            <b>Original Filename:</b>
-            <a href="javascript:;"
-               onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename|escapejs }}' }], 0, {{ container.id }}, null, false);">
-              {{ result.data.file_details.original_filename }}
-              &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
-            </a>
-            <br>
-            <b>Status:</b> {{ result.data.file_details.signed }}
-            <br>
-            <b>Publisher Name:</b> {{ result.data.file_details.digsig_publisher }}
-            <br>
-            {% if result.cb_url %}
-              Carbon Black <a target="_blank" href="{{ result.cb_url }}"><b><u>file summary</u></b></a>
-            {% endif %}
           </p>
-          <h3 class="cb-h3-style">General Info</h3>
-          <table class="cb-table-vertical">
-            <tr>
-              <td>
-                <b>MD5</b>
-              </td>
-              <td>
-                <a href="javascript:;"
-                   onclick="context_menu(this, [{'contains': ['md5', 'hash'], 'value': '{{ result.md5|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                  {{ result.md5 }}
-                &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
-              </td>
-            </tr>
-            {% if result.data.vault_id %}
+          {% if result.message %}<p>{{ result.message }}</p>{% endif %}
+          {% if result.data.file_details %}
+            <p class="cb-subheader-style">
+              <b>Original Filename:</b>
+              <a href="javascript:;"
+                 onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                {{ result.data.file_details.original_filename }}
+                &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
+              </a>
+              <br>
+              <b>Status:</b> {{ result.data.file_details.signed }}
+              <br>
+              <b>Publisher Name:</b> {{ result.data.file_details.digsig_publisher }}
+              <br>
+              {% if result.cb_url %}
+                Carbon Black <a target="_blank" href="{{ result.cb_url }}"><b><u>file summary</u></b></a>
+              {% endif %}
+            </p>
+            <h3 class="cb-h3-style">General Info</h3>
+            <table class="cb-table-vertical">
               <tr>
                 <td>
-                  <b>Vault ID</b>
+                  <b>MD5</b>
                 </td>
                 <td>
                   <a href="javascript:;"
-                     onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                    {{ result.data.vault_id }}
-                    &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
-                  </a>
+                     onclick="context_menu(this, [{'contains': ['md5', 'hash'], 'value': '{{ result.md5|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                    {{ result.md5 }}
+                  &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
                 </td>
               </tr>
+              {% if result.data.vault_id %}
+                <tr>
+                  <td>
+                    <b>Vault ID</b>
+                  </td>
+                  <td>
+                    <a href="javascript:;"
+                       onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                      {{ result.data.vault_id }}
+                      &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
+                    </a>
+                  </td>
+                </tr>
+              {% endif %}
+              <tr>
+                <td>
+                  <b>OS Type</b>
+                </td>
+                <td>{{ result.data.file_details.os_type }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Architecture</b>
+                </td>
+                {% if result.data.file_details.is_64bit == True %}
+                  <td>64 bit</td>
+                {% else %}
+                  <td>32 bit</td>
+                {% endif %}
+              </tr>
+              <tr>
+                <td>
+                  <b>Size</b>
+                </td>
+                <td>{{ result.data.file_details.orig_mod_len }}</td>
+              </tr>
+            </table>
+            <h3 class="cb-h3-style">Digital Signature Info</h3>
+            <table class="cb-table-vertical">
+              <tr>
+                <td>
+                  <b>Is Signed?</b>
+                </td>
+                {% if result.data.file_details.digsig_result == "Signed" %}
+                  <td>Yes</td>
+                {% else %}
+                  <td>No</td>
+                {% endif %}
+              </tr>
+              <tr>
+                <td>
+                  <b>Publisher</b>
+                </td>
+                <td>{{ result.data.file_details.digsig_publisher }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Signed Time</b>
+                </td>
+                <td>{{ result.data.file_details.digsig_sign_time }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Result Code</b>
+                </td>
+                <td>{{ result.data.file_details.digsig_result_code }}</td>
+              </tr>
+            </table>
+            <h3 class="cb-h3-style">File Info</h3>
+            <table class="cb-table-vertical">
+              <tr>
+                <td>
+                  <b>Description</b>
+                </td>
+                <td>{{ result.data.file_details.file_desc }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Version</b>
+                </td>
+                <td>{{ result.data.file_details.file_version }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Original Filename</b>
+                </td>
+                <td>
+                  <a href="javascript:;"
+                     onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                    {{ result.data.file_details.original_filename }}
+                  &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Internal Name</b>
+                </td>
+                <td>
+                  <a href="javascript:;"
+                     onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.internal_name|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                    {{ result.data.file_details.internal_name }}
+                  &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Company Name</b>
+                </td>
+                <td>{{ result.data.file_details.company_name }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Product Name</b>
+                </td>
+                <td>{{ result.data.file_details.product_name }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Product Version</b>
+                </td>
+                <td>{{ result.data.file_details.product_version }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Legal Copyright</b>
+                </td>
+                <td>{{ result.data.file_details.legal_copyright }}</td>
+              </tr>
+            </table>
+            <h3 class="cb-h3-style">Observed Paths</h3>
+            {% if result.data.file_details.observed_filename %}
+              <table class="cb-table-horizontal">
+                <tr>
+                  <th>Path</th>
+                </tr>
+                {% for curr_path in result.data.file_details.observed_filename %}
+                  <tr>
+                    <td>
+                      <a href="javascript:;"
+                         onclick="context_menu(this, [{'contains': ['file path'], 'value': '{{ curr_path|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                        {{ curr_path }}
+                        &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </table>
+            {% else %}
+              <p>No Data</p>
             {% endif %}
+            <h3 class="cb-h3-style">Endpoints</h3>
+            {% if result.data.file_details.endpoint %}
+              <table class="cb-table-horizontal">
+                <tr>
+                  <th>Host</th>
+                  <th>Sensor ID</th>
+                </tr>
+                {% for curr_endpoint in result.data.file_details.endpoint %}
+                  <tr>
+                    <td>
+                      <a href="javascript:;"
+                         onclick="context_menu(this, [{'contains': ['host name'], 'value': '{{ curr_endpoint.host|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                        {{ curr_endpoint.host }}
+                        &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
+                      </a>
+                    </td>
+                    <td>
+                      <a href="javascript:;"
+                         onclick="context_menu(this, [{'contains': ['carbon black sensor id'], 'value': '{{ curr_endpoint.sensor|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                        {{ curr_endpoint.sensor }}
+                        &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </table>
+            {% else %}
+              <p>No Data</p>
+            {% endif %}
+            <br>
+          {% endif %}
+          <!-- if file_details -->
+        {% else %}
+          <!-- if supplied a file source -->
+          <h3 class="cb-h3-style">Info</h3>
+          <table class="cb-table-horizontal">
             <tr>
-              <td>
-                <b>OS Type</b>
-              </td>
-              <td>{{ result.data.file_details.os_type }}</td>
+              <th>File Id</th>
+              <td>{{ result.data.file_id }}</td>
             </tr>
             <tr>
-              <td>
-                <b>Architecture</b>
-              </td>
-              {% if result.data.file_details.is_64bit == True %}
-                <td>64 bit</td>
-              {% else %}
-                <td>32 bit</td>
-              {% endif %}
+              <th>Session Id</th>
+              <td>{{ result.data.session_id }}</td>
             </tr>
             <tr>
-              <td>
-                <b>Size</b>
-              </td>
-              <td>{{ result.data.file_details.orig_mod_len }}</td>
-            </tr>
-          </table>
-          <h3 class="cb-h3-style">Digital Signature Info</h3>
-          <table class="cb-table-vertical">
-            <tr>
-              <td>
-                <b>Is Signed?</b>
-              </td>
-              {% if result.data.file_details.digsig_result == "Signed" %}
-                <td>Yes</td>
-              {% else %}
-                <td>No</td>
-              {% endif %}
+              <th>Name</th>
+              <td>{{ result.data.name }}</td>
             </tr>
             <tr>
-              <td>
-                <b>Publisher</b>
-              </td>
-              <td>{{ result.data.file_details.digsig_publisher }}</td>
-            </tr>
-            <tr>
-              <td>
-                <b>Signed Time</b>
-              </td>
-              <td>{{ result.data.file_details.digsig_sign_time }}</td>
-            </tr>
-            <tr>
-              <td>
-                <b>Result Code</b>
-              </td>
-              <td>{{ result.data.file_details.digsig_result_code }}</td>
-            </tr>
-          </table>
-          <h3 class="cb-h3-style">File Info</h3>
-          <table class="cb-table-vertical">
-            <tr>
-              <td>
-                <b>Description</b>
-              </td>
-              <td>{{ result.data.file_details.file_desc }}</td>
-            </tr>
-            <tr>
-              <td>
-                <b>Version</b>
-              </td>
-              <td>{{ result.data.file_details.file_version }}</td>
-            </tr>
-            <tr>
-              <td>
-                <b>Original Filename</b>
-              </td>
+              <th>Vault Id</th>
               <td>
                 <a href="javascript:;"
-                   onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.original_filename|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                  {{ result.data.file_details.original_filename }}
-                &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <b>Internal Name</b>
-              </td>
-              <td>
-                <a href="javascript:;"
-                   onclick="context_menu(this, [{'contains': ['file name', 'process name'], 'value': '{{ result.data.file_details.internal_name|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                  {{ result.data.file_details.internal_name }}
-                &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span></a>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <b>Company Name</b>
-              </td>
-              <td>{{ result.data.file_details.company_name }}</td>
-            </tr>
-            <tr>
-              <td>
-                <b>Product Name</b>
-              </td>
-              <td>{{ result.data.file_details.product_name }}</td>
-            </tr>
-            <tr>
-              <td>
-                <b>Product Version</b>
-              </td>
-              <td>{{ result.data.file_details.product_version }}</td>
-            </tr>
-            <tr>
-              <td>
-                <b>Legal Copyright</b>
-              </td>
-              <td>{{ result.data.file_details.legal_copyright }}</td>
-            </tr>
-          </table>
-          <h3 class="cb-h3-style">Observed Paths</h3>
-          {% if result.data.file_details.observed_filename %}
-            <table class="cb-table-horizontal">
-              <tr>
-                <th>Path</th>
+                   onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id|escapejs }}' }], 0, {{ container.id }}, null, false);">
+                  {{ result.data.vault_id }}
+                  &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
+                </td>
               </tr>
-              {% for curr_path in result.data.file_details.observed_filename %}
-                <tr>
-                  <td>
-                    <a href="javascript:;"
-                       onclick="context_menu(this, [{'contains': ['file path'], 'value': '{{ curr_path|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                      {{ curr_path }}
-                      &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
-                    </a>
-                  </td>
-                </tr>
-              {% endfor %}
             </table>
-          {% else %}
-            <p>No Data</p>
-          {% endif %}
-          <h3 class="cb-h3-style">Endpoints</h3>
-          {% if result.data.file_details.endpoint %}
-            <table class="cb-table-horizontal">
-              <tr>
-                <th>Host</th>
-                <th>Sensor ID</th>
-              </tr>
-              {% for curr_endpoint in result.data.file_details.endpoint %}
-                <tr>
-                  <td>
-                    <a href="javascript:;"
-                       onclick="context_menu(this, [{'contains': ['host name'], 'value': '{{ curr_endpoint.host|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                      {{ curr_endpoint.host }}
-                      &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
-                    </a>
-                  </td>
-                  <td>
-                    <a href="javascript:;"
-                       onclick="context_menu(this, [{'contains': ['carbon black sensor id'], 'value': '{{ curr_endpoint.sensor|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                      {{ curr_endpoint.sensor }}
-                      &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
-                    </a>
-                  </td>
-                </tr>
-              {% endfor %}
-            </table>
-          {% else %}
-            <p>No Data</p>
-          {% endif %}
-          <br>
-        {% endif %}
-        <!-- if file_details -->
-      {% else %}
-        <!-- if supplied a file source -->
-        <h3 class="cb-h3-style">Info</h3>
-        <table class="cb-table-horizontal">
-          <tr>
-            <th>File Id</th>
-            <td>{{ result.data.file_id }}</td>
-          </tr>
-          <tr>
-            <th>Session Id</th>
-            <td>{{ result.data.session_id }}</td>
-          </tr>
-          <tr>
-            <th>Name</th>
-            <td>{{ result.data.name }}</td>
-          </tr>
-          <tr>
-            <th>Vault Id</th>
-            <td>
-              <a href="javascript:;"
-                 onclick="context_menu(this, [{'contains': {{ result.vault_contains }}, 'value': '{{ result.data.vault_id|escapejs }}' }], 0, {{ container.id }}, null, false);">
-                {{ result.data.vault_id }}
-                &nbsp;<span class="fa fa-caret-down" style="font-size: smaller;"></span>
-              </td>
-            </tr>
-          </table>
         {% endif %}
       </div>
       <!-- Main Div -->
     {% endfor %}
     <!-- loop for each result end -->
-  {% endblock %}
-  <!-- Main Start Block -->
+{% endblock %}
+<!-- Main Start Block -->

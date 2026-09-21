@@ -842,7 +842,7 @@
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "12e1115c894e95daa08725a59137b9bc3f0e4a7c",
+						"value": "{{API_TOKEN}}",
 						"type": "text"
 					}
 				],
